@@ -31,13 +31,7 @@
         <div class="detail-info">
           <h1 class="detail-name">{{ product.name }}</h1>
 
-          <div class="detail-rating">
-            <div class="stars">
-              <Icon v-for="i in 5" :key="i" name="mdi:star" class="star" :class="{ filled: i <= Math.round(product.rating) }" />
-            </div>
-            <span>{{ product.rating }}</span>
-            <span class="review-count">({{ product.reviews }} تقييم)</span>
-          </div>
+
 
           <div class="detail-price">
             <span class="price-current">{{ product.price }} د.ل</span>
@@ -68,9 +62,6 @@
             <button class="btn btn-primary btn-lg">
               <Icon name="mdi:cart-outline" />
               أضيفي إلى السلة
-            </button>
-            <button class="btn btn-outline btn-icon">
-              <Icon name="mdi:heart-outline" />
             </button>
           </div>
 
@@ -187,30 +178,7 @@ useHead({
   line-height: 1.4;
 }
 
-.detail-rating {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  font-size: var(--font-size-sm);
-}
 
-.stars {
-  display: flex;
-  gap: 2px;
-}
-
-.star {
-  color: var(--color-border);
-  font-size: 1.1rem;
-}
-
-.star.filled {
-  color: var(--color-accent);
-}
-
-.review-count {
-  color: var(--color-text-light);
-}
 
 .detail-price {
   display: flex;

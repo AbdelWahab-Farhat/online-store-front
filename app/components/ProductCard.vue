@@ -25,11 +25,6 @@
     <!-- Info -->
     <div class="product-info">
       <h3 class="product-name">{{ product.name }}</h3>
-      <div class="product-rating">
-        <Icon name="mdi:star" class="star-icon" />
-        <span>{{ product.rating }}</span>
-        <span class="review-count">({{ product.reviews }})</span>
-      </div>
       <div class="product-price">
         <span class="price-current">{{ product.price }} د.ل</span>
         <span v-if="product.oldPrice" class="price-old">{{ product.oldPrice }} د.ل</span>
@@ -108,23 +103,6 @@ defineProps({
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-.product-rating {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-light);
-}
-
-.star-icon {
-  color: var(--color-accent);
-  font-size: 0.9rem;
-}
-
-.review-count {
-  color: var(--color-text-light);
 }
 
 .product-price {
