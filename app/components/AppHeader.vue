@@ -30,10 +30,10 @@
 
       <!-- Left group: Cart -->
       <div class="header-left">
-        <button class="cart-btn" aria-label="سلة التسوق">
+        <NuxtLink to="/Cart" class="cart-btn" aria-label="سلة التسوق">
           <Icon name="mdi:cart-outline" />
-          <span class="cart-count">0</span>
-        </button>
+          <span v-if="cartCount > 0" class="cart-count">{{ cartCount }}</span>
+        </NuxtLink>
       </div>
     </div>
   </header>
@@ -48,18 +48,19 @@
       <Icon name="mdi:shopping-outline" />
       <span>المنتجات</span>
     </NuxtLink>
-    <button class="mobile-nav-item">
+    <NuxtLink to="/Cart" class="mobile-nav-item">
       <div class="mobile-cart-wrap">
         <Icon name="mdi:cart-outline" />
-        <span class="mobile-cart-badge">0</span>
+        <span v-if="cartCount > 0" class="mobile-cart-badge">{{ cartCount }}</span>
       </div>
       <span>سلتي</span>
-    </button>
+    </NuxtLink>
   </nav>
 </template>
 
 <script setup lang="ts">
 const router = useRouter()
+const { cartCount } = useCart()
 const searchQuery = ref('')
 const isScrolled = ref(false)
 

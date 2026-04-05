@@ -59,9 +59,13 @@
 
           <!-- Actions -->
           <div class="detail-actions">
-            <button class="btn btn-primary btn-lg">
-              <Icon name="mdi:cart-outline" />
-              أضيفي إلى السلة
+            <button
+              class="btn btn-lg"
+              :class="addedToCart ? 'btn-added' : 'btn-primary'"
+              @click="handleAddToCart"
+            >
+              <Icon :name="addedToCart ? 'mdi:check-circle' : 'mdi:cart-outline'" />
+              {{ addedToCart ? 'تمت الإضافة ✓' : 'أضيفي إلى السلة' }}
             </button>
           </div>
 
@@ -102,9 +106,21 @@
 import { products } from '~/data/store'
 
 const route = useRoute()
+const { addToCart } = useCart()
 const id = Number(route.params.id)
 const product = computed(() => products.find((p) => p.id === id))
 const qty = ref(1)
+const addedToCart = ref(false)
+
+function handleAddToCart() {
+  if (product.value && !addedToCart.value) {
+    addToCart(product.value, qty.value)
+    addedToCart.value = true
+    setTimeout(() => {
+      addedToCart.value = false
+    }, 2000)
+  }
+}
 
 const relatedProducts = computed(() =>
   products
@@ -268,6 +284,17 @@ useHead({
   padding: var(--space-md) var(--space-2xl);
   font-size: var(--font-size-base);
   flex: 1;
+}
+
+.btn-added {
+  background: linear-gradient(135deg, #28a745, #34c759);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+  pointer-events: none;
+}
+
+.btn-added:hover {
+  color: #fff;
 }
 
 .btn-icon {
