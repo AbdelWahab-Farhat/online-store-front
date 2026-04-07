@@ -1,27 +1,33 @@
-export const adminNavigation = [
-  {
-    label: 'لوحة التحكم',
-    to: '/',
-    short: '01',
-  },
-  {
-    label: 'الطلبات',
-    to: '/orders',
-    short: '02',
-  },
+export interface NavItem {
+  label: string
+  to: string
+  icon: string
+  description: string
+}
+
+export const adminNavigation: NavItem[] = [
   {
     label: 'المنتجات',
     to: '/products',
-    short: '03',
+    icon: 'Package',
+    description: 'إدارة المنتجات والمخزون',
   },
+  // {
+  //   label: 'الطلبات',
+  //   to: '/orders',
+  //   icon: 'ShoppingCart',
+  //   description: 'متابعة وإدارة الطلبات',
+  // },
   {
     label: 'التصنيفات',
     to: '/categories',
-    short: '04',
+    icon: 'Tag',
+    description: 'ترتيب أقسام المتجر',
   },
-  {
-    label: 'الكوبونات',
-    to: '/coupons',
-    short: '05',
-  },
-] as const
+  // {
+  //   label: 'الكوبونات',
+  //   to: '/coupons',
+  //   icon: 'Ticket',
+  //   description: 'إدارة العروض والخصومات',
+  // },
+]

@@ -7,6 +7,11 @@ export default defineNuxtRouteMiddleware((to) => {
   }
 
   if (authStore.isAuthenticated && isLoginPage) {
-    return navigateTo('/')
+    return navigateTo('/products')
+  }
+
+  // Redirect root to products
+  if (to.path === '/') {
+    return navigateTo('/products')
   }
 })

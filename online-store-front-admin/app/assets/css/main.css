@@ -19,7 +19,6 @@
   --radius-md: 18px;
   --radius-sm: 14px;
   --radius-xs: 12px;
-  --sidebar-width: 280px;
   --container-max: 1400px;
   --transition-base: 0.24s ease;
   --font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
@@ -42,9 +41,9 @@ body {
   font-family: var(--font-family);
   color: var(--color-slate-950);
   background:
-    radial-gradient(circle at top left, rgba(236, 159, 67, 0.18), transparent 18%),
-    radial-gradient(circle at bottom right, rgba(28, 43, 67, 0.1), transparent 24%),
-    linear-gradient(180deg, #f8fafc 0%, #eef3f9 100%);
+    radial-gradient(circle at top left, rgba(236, 159, 67, 0.12), transparent 22%),
+    radial-gradient(circle at bottom right, rgba(28, 43, 67, 0.08), transparent 28%),
+    linear-gradient(180deg, #fafbfd 0%, #f0f4f9 100%);
   direction: rtl;
   text-align: start;
   -webkit-font-smoothing: antialiased;
@@ -56,10 +55,10 @@ body::before {
   inset: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.24) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.24) 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.45), transparent 90%);
+    linear-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.2) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.3), transparent 80%);
 }
 
 a {
@@ -139,6 +138,12 @@ img {
   margin: 0;
   color: var(--color-slate-700);
   line-height: 1.8;
+}
+
+.page-header-copy,
+.page-heading-copy {
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .grid {

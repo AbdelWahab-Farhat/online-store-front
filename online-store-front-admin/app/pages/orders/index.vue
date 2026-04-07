@@ -15,7 +15,7 @@ const statuses = [
   <div class="grid">
     <section class="surface-card panel">
       <div class="page-heading">
-        <div>
+        <div class="page-heading-copy">
           <span class="section-eyebrow">Orders</span>
           <h2>إدارة الطلبات</h2>
         </div>
