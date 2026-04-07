@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateProductRequest extends FormRequest
 {
@@ -15,17 +16,28 @@ class UpdateProductRequest extends FormRequest
     {
         return [
             'name' => ['sometimes', 'string', 'max:255'],
-            'slug' => ['sometimes', 'string', 'max:255', 'unique:products,slug,' . $this->route('product')],
+            'slug' => [
+                'sometimes',
+                'string',
+                'max:255',
+                Rule::unique('products', 'slug')->ignore($this->route('product'))
+            ],
             'description' => ['nullable', 'string'],
             'price' => ['sometimes', 'numeric', 'min:0'],
             'compare_price' => ['nullable', 'numeric', 'min:0'],
             'quantity' => ['sometimes', 'integer', 'min:0'],
-            'sku' => ['nullable', 'string', 'max:100', 'unique:products,sku,' . $this->route('product')],
+            'sku' => [
+                'nullable',
+                'string',
+                'max:100',
+                Rule::unique('products', 'sku')->ignore($this->route('product'))
+            ],
             'is_active' => ['nullable', 'boolean'],
             'category_ids' => ['sometimes', 'array', 'min:1'],
             'category_ids.*' => ['exists:categories,id'],
             'images' => ['nullable', 'array'],
-            'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ];
     }
 }
+

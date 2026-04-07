@@ -20,10 +20,13 @@ class ProductController extends Controller
      */
     public function index(Request $request, ProductFilters $filters): AnonymousResourceCollection
     {
-        $query = Product::with(['categories', 'images'])->filter($filters);
+        $query = Product::with(['categories', 'images'])->filter($filters)->latest();
+
+        /** @var \App\Models\User|null $user */
+        $user = auth('sanctum')->user();
 
         // فلترة المنتجات النشطة فقط للزوار
-        if (! $request->user()?->hasManagementAccess()) {
+        if (! $user?->hasManagementAccess()) {
             $query->active();
         }
 
@@ -52,7 +55,6 @@ class ProductController extends Controller
     public function store(StoreProductRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $data['slug'] = $data['slug'] ?? Str::slug($data['name']);
 
         // حذف الحقول اللي ما تخص جدول المنتج
         $productData = collect($data)->except(['category_ids', 'images'])->toArray();
@@ -87,10 +89,6 @@ class ProductController extends Controller
     public function update(UpdateProductRequest $request, Product $product): JsonResponse
     {
         $data = $request->validated();
-
-        if (isset($data['name']) && ! isset($data['slug'])) {
-            $data['slug'] = Str::slug($data['name']);
-        }
 
         $productData = collect($data)->except(['category_ids', 'images'])->toArray();
         $product->update($productData);

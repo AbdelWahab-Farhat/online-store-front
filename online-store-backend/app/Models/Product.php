@@ -8,10 +8,20 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Str;
 
 class Product extends Model
 {
     use HasFactory, Filterable;
+
+    protected static function booted(): void
+    {
+        static::saving(function (Product $product) {
+            if (blank($product->slug) && filled($product->name)) {
+                $product->slug = static::generateUniqueSlug($product->name, $product->getKey());
+            }
+        });
+    }
 
     protected $fillable = [
         'name',
@@ -83,5 +93,27 @@ class Product extends Model
         }
 
         return (int) round((($this->compare_price - $this->price) / $this->compare_price) * 100);
+    }
+
+    protected static function generateUniqueSlug(string $name, mixed $ignoreId = null): string
+    {
+        $baseSlug = Str::slug($name);
+
+        if (blank($baseSlug)) {
+            $baseSlug = 'product';
+        }
+
+        $slug = $baseSlug;
+        $counter = 2;
+
+        while (static::query()
+            ->when($ignoreId, fn ($query) => $query->whereKeyNot($ignoreId))
+            ->where('slug', $slug)
+            ->exists()) {
+            $slug = "{$baseSlug}-{$counter}";
+            $counter++;
+        }
+
+        return $slug;
     }
 }
