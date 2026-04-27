@@ -6,7 +6,7 @@
         <div class="footer-section">
           <div class="footer-logo">
             <span class="logo-icon">✿</span>
-            <span>أناقة</span>
+            <span>{{ getSetting('store_name', 'متجر كيان') }}</span>
           </div>
           <p class="footer-desc">
             وجهتك الأولى لأحدث صيحات الموضة والجمال. منتجات أصلية بأسعار منافسة وتوصيل سريع.
@@ -19,8 +19,6 @@
           <ul class="footer-links">
             <li><NuxtLink to="/">الرئيسية</NuxtLink></li>
             <li><NuxtLink to="/products">المنتجات</NuxtLink></li>
-            <li><NuxtLink to="/products?category=dresses">فساتين</NuxtLink></li>
-            <li><NuxtLink to="/products?category=bags">حقائب</NuxtLink></li>
           </ul>
         </div>
 
@@ -28,15 +26,29 @@
         <div class="footer-section">
           <h4 class="footer-title">تواصلي معنا</h4>
           <ul class="footer-links">
-            <li>
+            <li v-if="getSetting('contact_email')">
+              <Icon name="mdi:email-outline" />
+              <span>{{ getSetting('contact_email') }}</span>
+            </li>
+            <li v-else>
               <Icon name="mdi:email-outline" />
               <span>info@anaqah.store</span>
             </li>
-            <li>
+
+            <li v-if="getSetting('contact_phone')">
+              <Icon name="mdi:phone-outline" />
+              <span dir="ltr">{{ getSetting('contact_phone') }}</span>
+            </li>
+            <li v-else>
               <Icon name="mdi:phone-outline" />
               <span dir="ltr">+218 91 234 5678</span>
             </li>
-            <li>
+
+            <li v-if="getSetting('location')">
+              <Icon name="mdi:map-marker-outline" />
+              <span>{{ getSetting('location') }}</span>
+            </li>
+            <li v-else>
               <Icon name="mdi:map-marker-outline" />
               <span>طرابلس، ليبيا</span>
             </li>
@@ -47,16 +59,13 @@
         <div class="footer-section">
           <h4 class="footer-title">تابعينا</h4>
           <div class="footer-social">
-            <a href="#" aria-label="Instagram">
+            <a v-if="getSetting('instagram_url')" :href="getSetting('instagram_url')" target="_blank" aria-label="Instagram">
               <Icon name="mdi:instagram" />
             </a>
-            <a href="#" aria-label="Facebook">
+            <a v-if="getSetting('facebook_url')" :href="getSetting('facebook_url')" target="_blank" aria-label="Facebook">
               <Icon name="mdi:facebook" />
             </a>
-            <a href="#" aria-label="TikTok">
-              <Icon name="mdi:music-note" />
-            </a>
-            <a href="#" aria-label="WhatsApp">
+            <a v-if="getSetting('whatsapp_number')" :href="'https://wa.me/' + getSetting('whatsapp_number').replace(/\D/g,'')" target="_blank" aria-label="WhatsApp">
               <Icon name="mdi:whatsapp" />
             </a>
           </div>
@@ -64,11 +73,30 @@
       </div>
 
       <div class="footer-bottom">
-        <p>© {{ new Date().getFullYear() }} أناقة. جميع الحقوق محفوظة.</p>
+        <p>© {{ new Date().getFullYear() }} {{ getSetting('store_name', 'متجر كيان') }}. جميع الحقوق محفوظة.</p>
       </div>
     </div>
   </footer>
 </template>
+
+<script setup lang="ts">
+const { $axios } = useNuxtApp()
+
+const { data: settings } = await useAsyncData('app-settings-footer', async () => {
+  try {
+    const res = await $axios.get('/settings')
+    return res.data.data
+  } catch (e) {
+    return []
+  }
+})
+
+function getSetting(key: string, fallback: string = '') {
+  if (!settings.value) return fallback
+  const item = settings.value.find((s: any) => s.key === key)
+  return item?.value || fallback
+}
+</script>
 
 <style scoped>
 .footer {

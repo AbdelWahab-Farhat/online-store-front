@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import {
   Tag,
-  AlertCircle,
-  RefreshCw,
   Eye,
   Pencil,
-  Loader2,
   Package,
   Plus
 } from 'lucide-vue-next'
@@ -51,26 +48,30 @@ function goToEditCategory(categoryId: number) {
 
     <!-- ═══════ Loading State ═══════ -->
     <Transition name="fade" mode="out-in">
-      <div v-if="categoriesStore.loading" class="state-card surface-card" key="loading">
-        <div class="loader-wrap">
-          <Loader2 :size="44" :stroke-width="2" class="spinner" />
-        </div>
-        <h2>جاري تحميل التصنيفات...</h2>
-        <p>يرجى الانتظار لحظة</p>
-      </div>
+      <LoadingState v-if="categoriesStore.loading" message="جاري تحميل التصنيفات..." key="loading" />
 
       <!-- ═══════ Error State ═══════ -->
-      <div v-else-if="categoriesStore.error" class="state-card error-state surface-card" key="error">
-        <div class="state-icon error-icon">
-          <AlertCircle :size="40" :stroke-width="1.5" />
-        </div>
-        <h2>تعذر تحميل التصنيفات</h2>
-        <p>{{ categoriesStore.error }}</p>
-        <button class="button-primary retry-btn" @click="categoriesStore.fetchCategories()">
-          <RefreshCw :size="17" :stroke-width="2.2" />
-          إعادة المحاولة
-        </button>
-      </div>
+      <ErrorState
+        v-else-if="categoriesStore.error"
+        title="تعذر تحميل التصنيفات"
+        :message="categoriesStore.error"
+        @retry="categoriesStore.fetchCategories()"
+        key="error"
+      />
+
+      <!-- ═══════ Empty State ═══════ -->
+      <EmptyState
+        v-else-if="categoriesStore.categories.length === 0"
+        title="لا توجد تصنيفات"
+        description="ابدأ بإضافة تصنيفات لترتيب منتجاتك في أقسام."
+        action-label="إضافة تصنيف"
+        action-to="/categories/manage"
+        key="empty"
+      >
+        <template #icon>
+          <Tag :size="40" :stroke-width="1.5" />
+        </template>
+      </EmptyState>
 
       <!-- ═══════ Success State (Categories Grid) ═══════ -->
       <div v-else class="categories-grid" key="success">
@@ -342,73 +343,7 @@ function goToEditCategory(categoryId: number) {
   transform: scale(1.08);
 }
 
-/* ─── States (Loading / Error) ─── */
-.state-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 60px 32px;
-  gap: 12px;
-}
-
-.loader-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  background: rgba(236, 159, 67, 0.08);
-  margin-bottom: 8px;
-}
-
-.spinner {
-  color: var(--color-amber-700);
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.state-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  margin-bottom: 8px;
-}
-
-.error-icon {
-  background: rgba(202, 61, 84, 0.1);
-  color: var(--color-red-600);
-}
-
-.state-card h2 {
-  margin: 0;
-  font-size: 1.18rem;
-  color: var(--color-slate-950);
-}
-
-.state-card p {
-  margin: 0;
-  color: var(--color-slate-700);
-  font-size: 0.94rem;
-  max-width: 360px;
-  line-height: 1.7;
-}
-
-.retry-btn {
-  margin-top: 8px;
-  min-height: 42px;
-  padding: 0 24px;
-  font-size: 0.92rem;
-}
+/* States are now handled by reusable components */
 
 /* ─── Responsive ─── */
 @media (max-width: 640px) {

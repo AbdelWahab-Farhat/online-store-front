@@ -24,6 +24,18 @@ export const adminNavigation: NavItem[] = [
     icon: 'Tag',
     description: 'ترتيب أقسام المتجر',
   },
+  {
+    label: 'الإعلانات',
+    to: '/announcements',
+    icon: 'Megaphone',
+    description: 'إدارة اللوحات الإعلانية',
+  },
+  {
+    label: 'الإعدادات',
+    to: '/settings',
+    icon: 'Settings',
+    description: 'إعدادات المتجر العامة',
+  },
   // {
   //   label: 'الكوبونات',
   //   to: '/coupons',

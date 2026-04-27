@@ -3,7 +3,13 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
 
-  modules: ['@nuxt/icon', '@nuxt/image', '@nuxt/fonts'],
+  modules: ['@nuxt/icon', '@nuxt/image', '@nuxt/fonts', '@pinia/nuxt'],
+
+  runtimeConfig: {
+    public: {
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8000/api',
+    },
+  },
 
   fonts: {
     families: [
@@ -16,14 +22,14 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { lang: 'ar', dir: 'rtl' },
-      title: 'أناقة — متجر المرأة العصرية',
+      title: 'متجر كيان — تسوّق أونلاين',
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         {
           name: 'description',
           content:
-            'أناقة — وجهتك الأولى لأحدث صيحات الموضة والجمال للمرأة العصرية. تسوّقي الآن!',
+            'متجر كيان — وجهتك الأولى للتسوّق أونلاين. أحدث المنتجات بأفضل الأسعار وتوصيل سريع!',
         },
       ],
       link: [

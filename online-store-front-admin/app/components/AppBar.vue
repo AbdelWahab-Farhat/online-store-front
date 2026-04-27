@@ -4,8 +4,12 @@ import {
   ShoppingCart,
   Tag,
   Ticket,
+  Megaphone,
   CalendarDays,
   User,
+  Settings,
+  Menu,
+  X,
 } from 'lucide-vue-next'
 import { adminNavigation } from '~/data/admin-navigation'
 
@@ -31,7 +35,25 @@ const iconMap: Record<string, any> = {
   ShoppingCart,
   Tag,
   Ticket,
+  Megaphone,
+  Settings,
 }
+
+// Mobile Drawer
+const isDrawerOpen = ref(false)
+
+function toggleDrawer() {
+  isDrawerOpen.value = !isDrawerOpen.value
+}
+
+function closeDrawer() {
+  isDrawerOpen.value = false
+}
+
+// Close drawer on route change
+watch(() => route.path, () => {
+  closeDrawer()
+})
 </script>
 
 <template>
@@ -39,13 +61,16 @@ const iconMap: Record<string, any> = {
     <div class="navbar-inner">
       <!-- Right Section: Menu Toggle + Logo -->
       <div class="navbar-start">
+        <button class="menu-toggle" @click="toggleDrawer" aria-label="فتح القائمة">
+          <Menu :size="22" :stroke-width="2" />
+        </button>
         <NuxtLink to="/products" class="navbar-brand">
-          <span class="brand-logo">OS</span>
-          <span class="brand-text">Online Store</span>
+          <img src="/logo.png" alt="متجر كيان" class="brand-logo" />
+          <span class="brand-text">متجر كيان</span>
         </NuxtLink>
       </div>
 
-      <!-- Center Section: Quick Links -->
+      <!-- Center Section: Quick Links (Desktop Only) -->
       <nav class="navbar-center">
         <NuxtLink
           v-for="item in adminNavigation"
@@ -74,6 +99,55 @@ const iconMap: Record<string, any> = {
       </div>
     </div>
   </header>
+
+  <!-- Mobile Drawer Overlay -->
+  <Transition name="overlay-fade">
+    <div v-if="isDrawerOpen" class="drawer-overlay" @click="closeDrawer" />
+  </Transition>
+
+  <!-- Mobile Drawer -->
+  <Transition name="drawer-slide">
+    <aside v-if="isDrawerOpen" class="mobile-drawer">
+      <div class="drawer-header">
+        <NuxtLink to="/products" class="navbar-brand" @click="closeDrawer">
+          <img src="/logo.png" alt="متجر كيان" class="brand-logo" />
+          <span class="brand-text">متجر كيان</span>
+        </NuxtLink>
+        <button class="drawer-close" @click="closeDrawer" aria-label="إغلاق القائمة">
+          <X :size="20" :stroke-width="2.5" />
+        </button>
+      </div>
+
+      <nav class="drawer-nav">
+        <NuxtLink
+          v-for="item in adminNavigation"
+          :key="item.to"
+          :to="item.to"
+          class="drawer-link"
+          :class="{ 'is-active': isActiveLink(item.to) }"
+          @click="closeDrawer"
+        >
+          <component :is="iconMap[item.icon]" :size="20" :stroke-width="2" />
+          <div class="drawer-link-text">
+            <span class="drawer-link-label">{{ item.label }}</span>
+            <span class="drawer-link-desc">{{ item.description }}</span>
+          </div>
+        </NuxtLink>
+      </nav>
+
+      <div class="drawer-footer">
+        <div class="drawer-profile">
+          <span class="profile-avatar">
+            <User :size="16" :stroke-width="2.2" />
+          </span>
+          <div class="drawer-profile-info">
+            <span class="drawer-profile-name">{{ userName }}</span>
+            <span class="drawer-profile-date">{{ currentDate }}</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </Transition>
 </template>
 
 <style scoped>
@@ -97,6 +171,24 @@ const iconMap: Record<string, any> = {
   min-height: 56px;
 }
 
+/* ─── Menu Toggle (Mobile Only) ─── */
+.menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(20, 32, 51, 0.06);
+  color: var(--color-slate-800);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.menu-toggle:hover {
+  background: rgba(20, 32, 51, 0.1);
+}
+
 /* ─── Right: Logo ─── */
 .navbar-start {
   display: flex;
@@ -116,17 +208,10 @@ const iconMap: Record<string, any> = {
 }
 
 .brand-logo {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   width: 38px;
   height: 38px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--color-amber-700), var(--color-amber-500));
-  color: var(--color-white);
-  font-weight: 800;
-  font-size: 0.82rem;
-  box-shadow: 0 4px 12px rgba(196, 107, 23, 0.25);
+  border-radius: 10px;
+  object-fit: contain;
 }
 
 .brand-text {
@@ -224,10 +309,164 @@ const iconMap: Record<string, any> = {
   white-space: nowrap;
 }
 
+/* ═══════ Mobile Drawer ═══════ */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(20, 32, 51, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.mobile-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 201;
+  width: min(320px, 85vw);
+  height: 100vh;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(24px) saturate(1.4);
+  border-left: 1px solid rgba(213, 222, 234, 0.6);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -12px 0 40px rgba(20, 32, 51, 0.15);
+  overflow-y: auto;
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(213, 222, 234, 0.6);
+}
+
+.drawer-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(20, 32, 51, 0.06);
+  color: var(--color-slate-700);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.drawer-close:hover {
+  background: rgba(202, 61, 84, 0.1);
+  color: var(--color-red-600);
+}
+
+.drawer-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 4px;
+}
+
+.drawer-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  color: var(--color-slate-700);
+  transition: all var(--transition-base);
+}
+
+.drawer-link:hover {
+  background: rgba(20, 32, 51, 0.05);
+  color: var(--color-slate-950);
+}
+
+.drawer-link.is-active {
+  background: rgba(236, 159, 67, 0.1);
+  color: var(--color-amber-700);
+}
+
+.drawer-link-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.drawer-link-label {
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.drawer-link-desc {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-slate-500);
+}
+
+.drawer-link.is-active .drawer-link-desc {
+  color: var(--color-amber-500);
+}
+
+.drawer-footer {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(213, 222, 234, 0.6);
+}
+
+.drawer-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.drawer-profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.drawer-profile-name {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--color-slate-950);
+}
+
+.drawer-profile-date {
+  font-size: 0.78rem;
+  color: var(--color-slate-500);
+  font-weight: 600;
+}
+
+/* ─── Drawer Transitions ─── */
+.overlay-fade-enter-active,
+.overlay-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.overlay-fade-enter-from,
+.overlay-fade-leave-to {
+  opacity: 0;
+}
+
+.drawer-slide-enter-active {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.drawer-slide-leave-active {
+  transition: transform 0.25s ease-in;
+}
+.drawer-slide-enter-from,
+.drawer-slide-leave-to {
+  transform: translateX(100%);
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 1024px) {
   .navbar-center {
     display: none;
+  }
+
+  .menu-toggle {
+    display: flex;
   }
 }
 

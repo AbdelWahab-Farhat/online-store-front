@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import {
   Package,
-  AlertCircle,
-  RefreshCw,
   Pencil,
   TrendingDown,
-  Loader2,
   Plus,
 } from 'lucide-vue-next'
 
@@ -70,26 +67,30 @@ function openProduct(productId: number | string) {
 
     <!-- ═══════ Loading State ═══════ -->
     <Transition name="fade" mode="out-in">
-      <div v-if="productsStore.loading" class="state-card surface-card" key="loading">
-        <div class="loader-wrap">
-          <Loader2 :size="44" :stroke-width="2" class="spinner" />
-        </div>
-        <h2>جاري تحميل المنتجات...</h2>
-        <p>يرجى الانتظار لحظة</p>
-      </div>
+      <LoadingState v-if="productsStore.loading" message="جاري تحميل المنتجات..." key="loading" />
 
       <!-- ═══════ Error State ═══════ -->
-      <div v-else-if="productsStore.error" class="state-card error-state surface-card" key="error">
-        <div class="state-icon error-icon">
-          <AlertCircle :size="40" :stroke-width="1.5" />
-        </div>
-        <h2>تعذر تحميل المنتجات</h2>
-        <p>{{ productsStore.error }}</p>
-        <button class="button-primary retry-btn" @click="productsStore.fetchProducts()">
-          <RefreshCw :size="17" :stroke-width="2.2" />
-          إعادة المحاولة
-        </button>
-      </div>
+      <ErrorState
+        v-else-if="productsStore.error"
+        title="تعذر تحميل المنتجات"
+        :message="productsStore.error"
+        @retry="productsStore.fetchProducts()"
+        key="error"
+      />
+
+      <!-- ═══════ Empty State ═══════ -->
+      <EmptyState
+        v-else-if="productsStore.products.length === 0"
+        title="لا توجد منتجات"
+        description="ابدأ بإضافة منتجاتك لعرضها في المتجر."
+        action-label="إضافة منتج"
+        action-to="/products/manage"
+        key="empty"
+      >
+        <template #icon>
+          <Package :size="40" :stroke-width="1.5" />
+        </template>
+      </EmptyState>
 
       <!-- ═══════ Success State (Products Grid) ═══════ -->
       <div v-else class="products-section" key="success">
@@ -478,73 +479,7 @@ function openProduct(productId: number | string) {
   transform: scale(1.08);
 }
 
-/* ─── States (Loading / Error) ─── */
-.state-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 60px 32px;
-  gap: 12px;
-}
-
-.loader-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  background: rgba(236, 159, 67, 0.08);
-  margin-bottom: 8px;
-}
-
-.spinner {
-  color: var(--color-amber-700);
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.state-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  margin-bottom: 8px;
-}
-
-.error-icon {
-  background: rgba(202, 61, 84, 0.1);
-  color: var(--color-red-600);
-}
-
-.state-card h2 {
-  margin: 0;
-  font-size: 1.18rem;
-  color: var(--color-slate-950);
-}
-
-.state-card p {
-  margin: 0;
-  color: var(--color-slate-700);
-  font-size: 0.94rem;
-  max-width: 360px;
-  line-height: 1.7;
-}
-
-.retry-btn {
-  margin-top: 8px;
-  min-height: 42px;
-  padding: 0 24px;
-  font-size: 0.92rem;
-}
+/* States are now handled by reusable components */
 
 /* ─── Responsive ─── */
 @media (max-width: 640px) {

@@ -1,9 +1,9 @@
 <template>
-  <section class="hero-carousel" @mouseenter="pauseAutoplay" @mouseleave="resumeAutoplay">
+  <section v-if="slides.length" class="hero-carousel" @mouseenter="pauseAutoplay" @mouseleave="resumeAutoplay">
     <!-- Slides -->
     <div class="slides-wrapper">
       <div
-        v-for="(slide, index) in heroSlides"
+        v-for="(slide, index) in slides"
         :key="slide.id"
         class="slide"
         :class="{
@@ -11,14 +11,21 @@
           'slide-exit': previousSlide === index && previousSlide !== currentSlide
         }"
       >
-        <img :src="slide.image" :alt="slide.title" class="slide-image" />
+        <img
+          v-if="!slideImageErrors[slide.id]"
+          :src="slide.image?.url"
+          :alt="slide.title"
+          class="slide-image"
+          @error="slideImageErrors[slide.id] = true"
+        />
+        <div v-else class="slide-image slide-image-fallback"></div>
         <div class="slide-overlay"></div>
         <div class="slide-content">
-          <span class="slide-badge">{{ slide.badge || 'تشكيلة مميزة' }}</span>
+          <span class="slide-badge">{{ slide.link_text || 'تشكيلة مميزة' }}</span>
           <h2 class="slide-title">{{ slide.title }}</h2>
-          <p class="slide-subtitle">{{ slide.subtitle }}</p>
-          <NuxtLink :to="slide.link" class="slide-cta">
-            تسوّقي الآن
+          <p v-if="slide.description" class="slide-subtitle">{{ slide.description }}</p>
+          <NuxtLink v-if="slide.link" :to="slide.link" class="slide-cta">
+            {{ slide.link_text || 'تسوّقي الآن' }}
             <Icon name="mdi:arrow-left" />
           </NuxtLink>
         </div>
@@ -28,7 +35,7 @@
     <!-- Progress bar -->
     <div class="carousel-progress">
       <div
-        v-for="(slide, index) in heroSlides"
+        v-for="(slide, index) in slides"
         :key="slide.id"
         class="progress-item"
         :class="{ active: currentSlide === index, past: index < currentSlide }"
@@ -37,11 +44,11 @@
         <div class="progress-bar">
           <div class="progress-fill" :style="currentSlide === index ? { animationDuration: autoplayDuration + 'ms' } : {}"></div>
         </div>
-        <span class="progress-label">{{ slide.shortTitle || slide.title }}</span>
+        <span class="progress-label">{{ slide.title }}</span>
       </div>
     </div>
 
-    <!-- Arrows — RTL-correct: right arrow = prev, left arrow = next -->
+    <!-- Arrows -->
     <button class="carousel-arrow arrow-right" @click="prevSlide" aria-label="السابق">
       <Icon name="mdi:chevron-right" />
     </button>
@@ -53,29 +60,37 @@
     <div class="slide-counter">
       <span class="counter-current">{{ String(currentSlide + 1).padStart(2, '0') }}</span>
       <span class="counter-separator">/</span>
-      <span class="counter-total">{{ String(heroSlides.length).padStart(2, '0') }}</span>
+      <span class="counter-total">{{ String(slides.length).padStart(2, '0') }}</span>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { heroSlides } from '~/data/store'
+import { useAnnouncementsStore } from '~/stores/announcements'
+
+const announcementsStore = useAnnouncementsStore()
+const { announcements: slides } = storeToRefs(announcementsStore)
 
 const currentSlide = ref(0)
 const previousSlide = ref(0)
+const slideImageErrors = reactive<Record<number, boolean>>({})
 const autoplayDuration = 4000
 let autoplayTimer: ReturnType<typeof setInterval> | null = null
 let isPaused = false
 
+const totalSlides = computed(() => slides.value.length)
+
 function nextSlide() {
+  if (!totalSlides.value) return
   previousSlide.value = currentSlide.value
-  currentSlide.value = (currentSlide.value + 1) % heroSlides.length
+  currentSlide.value = (currentSlide.value + 1) % totalSlides.value
   resetAutoplay()
 }
 
 function prevSlide() {
+  if (!totalSlides.value) return
   previousSlide.value = currentSlide.value
-  currentSlide.value = (currentSlide.value - 1 + heroSlides.length) % heroSlides.length
+  currentSlide.value = (currentSlide.value - 1 + totalSlides.value) % totalSlides.value
   resetAutoplay()
 }
 
@@ -87,9 +102,10 @@ function goToSlide(index: number) {
 }
 
 function startAutoplay() {
+  if (!totalSlides.value) return
   autoplayTimer = setInterval(() => {
     previousSlide.value = currentSlide.value
-    currentSlide.value = (currentSlide.value + 1) % heroSlides.length
+    currentSlide.value = (currentSlide.value + 1) % totalSlides.value
   }, autoplayDuration)
 }
 
@@ -108,7 +124,8 @@ function resumeAutoplay() {
   startAutoplay()
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await announcementsStore.fetchAnnouncements()
   startAutoplay()
 })
 
@@ -147,6 +164,11 @@ onUnmounted(() => {
   object-fit: cover;
   transform: scale(1.08);
   transition: transform 6s ease-out, opacity 1s ease;
+}
+
+.slide-image-fallback {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  transform: none !important;
 }
 
 .slide.active {

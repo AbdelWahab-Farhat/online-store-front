@@ -1,5 +1,5 @@
 /* ========================================
-   أناقة — Women's Online Store
+   متجر الكيان — Online Store
    Global Design System
    ======================================== */
 
@@ -60,7 +60,7 @@
   --shadow-lg: 0 8px 40px var(--color-shadow);
 
   /* Container */
-  --container-max: 1200px;
+  --container-max: 1280px;
 }
 
 /* Reset */

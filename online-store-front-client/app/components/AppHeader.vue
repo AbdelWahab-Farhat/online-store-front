@@ -1,38 +1,62 @@
 <template>
   <header class="header" :class="{ scrolled: isScrolled }">
-    <div class="container header-inner">
-      <!-- Right group: Logo + Nav -->
-      <div class="header-right">
+    <!-- Top Bar: Logo + Search + Icons -->
+    <div class="header-top">
+      <div class="container header-top-inner">
+        <!-- Logo -->
         <NuxtLink to="/" class="logo">
-          <div class="logo-placeholder">LOGO</div>
+          <img src="/images/logo.png" alt="متجر كيان" class="logo-img" />
+          <span class="logo-text">متجر كيان</span>
         </NuxtLink>
-        <span class="nav-divider"></span>
-        <nav class="header-nav">
-          <NuxtLink to="/" class="nav-link">الرئيسية</NuxtLink>
-          <NuxtLink to="/products" class="nav-link">المنتجات</NuxtLink>
-        </nav>
-      </div>
 
-      <!-- Search (center) -->
-      <div class="header-search">
-        <Icon name="mdi:magnify" class="search-icon" />
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="ابحثي عن منتجات..."
-          class="search-input"
-          @keyup.enter="handleSearch"
-        />
-        <button v-if="searchQuery" class="search-clear" @click="searchQuery = ''">
-          <Icon name="mdi:close" />
-        </button>
-      </div>
+        <!-- Search -->
+        <div class="header-search">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="ابحث عن منتجات..."
+            class="search-input"
+            @keyup.enter="handleSearch"
+          />
+          <button class="search-btn" @click="handleSearch" aria-label="بحث">
+            <Icon name="mdi:magnify" />
+          </button>
+          <button v-if="searchQuery" class="search-clear" @click="searchQuery = ''">
+            <Icon name="mdi:close" />
+          </button>
+        </div>
 
-      <!-- Left group: Cart -->
-      <div class="header-left">
-        <NuxtLink to="/Cart" class="cart-btn" aria-label="سلة التسوق">
-          <Icon name="mdi:cart-outline" />
-          <span v-if="cartCount > 0" class="cart-count">{{ cartCount }}</span>
+        <!-- Action Icons -->
+        <div class="header-actions">
+          <NuxtLink to="/" class="action-btn" aria-label="المفضلة">
+            <Icon :name="favoritesCount > 0 ? 'mdi:heart' : 'mdi:heart-outline'" :class="{ 'has-favs': favoritesCount > 0 }" />
+            <span v-if="favoritesCount > 0" class="action-badge">{{ favoritesCount }}</span>
+          </NuxtLink>
+          <NuxtLink to="/Cart" class="action-btn" aria-label="سلة التسوق">
+            <Icon name="mdi:cart-outline" />
+            <span v-if="cartCount > 0" class="action-badge">{{ cartCount }}</span>
+          </NuxtLink>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Bar: Categories Navigation -->
+    <div class="header-nav-bar">
+      <div class="container header-nav-inner">
+        <NuxtLink to="/" class="nav-link" exact-active-class="nav-active">
+          <Icon name="mdi:home-outline" class="nav-link-icon" />
+          الرئيسية
+        </NuxtLink>
+        <NuxtLink
+          v-for="cat in categories"
+          :key="cat.id"
+          :to="`/products?category=${cat.slug}`"
+          class="nav-link"
+          :class="{ 'nav-active': route.query.category === cat.slug }"
+          :active-class="''"
+          :exact-active-class="''"
+        >
+          {{ cat.name }}
         </NuxtLink>
       </div>
     </div>
@@ -48,6 +72,10 @@
       <Icon name="mdi:shopping-outline" />
       <span>المنتجات</span>
     </NuxtLink>
+    <button class="mobile-nav-item" @click="toggleMobileSearch">
+      <Icon name="mdi:magnify" />
+      <span>بحث</span>
+    </button>
     <NuxtLink to="/Cart" class="mobile-nav-item">
       <div class="mobile-cart-wrap">
         <Icon name="mdi:cart-outline" />
@@ -56,21 +84,67 @@
       <span>سلتي</span>
     </NuxtLink>
   </nav>
+
+  <!-- Mobile Search Overlay -->
+  <Transition name="slide-down">
+    <div v-if="showMobileSearch" class="mobile-search-overlay">
+      <div class="mobile-search-bar">
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="ابحث عن منتجات..."
+          class="mobile-search-input"
+          @keyup.enter="handleMobileSearch"
+          ref="mobileSearchInput"
+        />
+        <button class="mobile-search-close" @click="showMobileSearch = false">
+          <Icon name="mdi:close" />
+        </button>
+      </div>
+    </div>
+  </Transition>
 </template>
 
 <script setup lang="ts">
+import { useCategoriesStore } from '~/stores/categories'
+
+const route = useRoute()
 const router = useRouter()
 const { cartCount } = useCart()
+const { favoritesCount } = useFavorites()
+const categoriesStore = useCategoriesStore()
+const { categories } = storeToRefs(categoriesStore)
 const searchQuery = ref('')
 const isScrolled = ref(false)
+const showMobileSearch = ref(false)
+const mobileSearchInput = ref<HTMLInputElement | null>(null)
 
 function handleSearch() {
   if (searchQuery.value.trim()) {
-    router.push({ path: '/products', query: { q: searchQuery.value.trim() } })
+    router.push({ path: '/products', query: { search: searchQuery.value.trim() } })
+    searchQuery.value = ''
+  }
+}
+
+function handleMobileSearch() {
+  if (searchQuery.value.trim()) {
+    router.push({ path: '/products', query: { search: searchQuery.value.trim() } })
+    searchQuery.value = ''
+    showMobileSearch.value = false
+  }
+}
+
+function toggleMobileSearch() {
+  showMobileSearch.value = !showMobileSearch.value
+  if (showMobileSearch.value) {
+    nextTick(() => {
+      mobileSearchInput.value?.focus()
+    })
   }
 }
 
 onMounted(() => {
+  categoriesStore.fetchCategories()
   window.addEventListener('scroll', () => {
     isScrolled.value = window.scrollY > 20
   })
@@ -78,224 +152,241 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* ==========================================
+   SHEIN-Style Header
+   ========================================== */
+
+/* Top Bar */
 .header {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(255, 255, 255, 0.97);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--color-border);
-  transition: all var(--transition-base);
+  background: #fff;
+  transition: box-shadow 0.3s ease;
 }
 
 .header.scrolled {
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
 }
 
-.header-inner {
+.header-top {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.header-top-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 56px;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-shrink: 0;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
+  height: 64px;
+  gap: 20px;
 }
 
 /* Logo */
 .logo {
-  flex-shrink: 0;
-}
-
-.logo-placeholder {
-  width: 66px;
-  height: 32px;
-  border: 2px dashed var(--color-primary);
-  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 0.6rem;
-  font-weight: 800;
-  color: var(--color-primary);
-  letter-spacing: 2px;
-}
-
-.nav-divider {
-  width: 1px;
-  height: 20px;
-  background: var(--color-border);
-}
-
-/* Nav */
-.header-nav {
-  display: flex;
-  align-items: center;
-  gap: 20px;
+  gap: 10px;
   flex-shrink: 0;
-}
-
-.nav-link {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--color-text);
   text-decoration: none;
-  padding: 4px 0;
-  position: relative;
-  transition: color var(--transition-fast);
 }
 
-.nav-link::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  right: 0;
-  left: 0;
-  height: 2px;
-  background: var(--color-primary);
-  transform: scaleX(0);
-  transition: transform 0.3s ease;
-  transform-origin: right;
-  border-radius: 1px;
+.logo-img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  border-radius: 6px;
 }
 
-.nav-link:hover,
-.nav-link.router-link-exact-active {
-  color: var(--color-primary);
-}
-
-.nav-link:hover::after,
-.nav-link.router-link-exact-active::after {
-  transform: scaleX(1);
+.logo-text {
+  font-size: 1.3rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #e65100, #c2185b, #7b1fa2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  white-space: nowrap;
 }
 
 /* Search */
 .header-search {
   flex: 1;
-  margin: 0 24px;
+  max-width: 600px;
   position: relative;
   display: flex;
   align-items: center;
-}
-
-.search-icon {
-  position: absolute;
-  right: 14px;
-  font-size: 1.1rem;
-  color: var(--color-text-light);
-  pointer-events: none;
 }
 
 .search-input {
   width: 100%;
-  padding: 9px 38px 9px 36px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-full);
+  height: 42px;
+  padding: 0 110px 0 40px;
+  border: 2px solid #222;
+  border-radius: 24px;
   font-family: var(--font-family);
-  font-size: var(--font-size-sm);
+  font-size: 0.9rem;
   color: var(--color-text);
-  background: var(--color-bg-soft);
-  transition: all var(--transition-fast);
+  background: #fff;
   outline: none;
+  transition: all 0.3s ease;
 }
 
 .search-input::placeholder {
-  color: var(--color-text-light);
+  color: #999;
 }
 
 .search-input:focus {
-  border-color: var(--color-primary);
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(194, 24, 91, 0.08);
+  border-color: #c2185b;
+  box-shadow: 0 0 0 3px rgba(194, 24, 91, 0.1);
+}
+
+.search-btn {
+  position: absolute;
+  left: 4px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #222;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  transition: all 0.2s ease;
+}
+
+.search-btn:hover {
+  background: #c2185b;
 }
 
 .search-clear {
   position: absolute;
-  left: 10px;
+  left: 46px;
   background: none;
   font-size: 1rem;
-  color: var(--color-text-light);
+  color: #999;
   display: flex;
   align-items: center;
   padding: 4px;
   border-radius: 50%;
-  transition: all var(--transition-fast);
+  transition: all 0.2s ease;
 }
 
 .search-clear:hover {
-  background: var(--color-bg-soft);
-  color: var(--color-primary);
+  color: #c2185b;
 }
 
-/* Cart */
-.cart-btn {
-  position: relative;
-  background: none;
-  font-size: 1.4rem;
-  color: var(--color-text);
+/* Action buttons */
+.header-actions {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  transition: all var(--transition-fast);
+  gap: 6px;
   flex-shrink: 0;
 }
 
-.cart-btn:hover {
-  background: var(--color-bg-soft);
-  color: var(--color-primary);
+.action-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  font-size: 1.35rem;
+  color: #333;
+  transition: all 0.2s ease;
+  text-decoration: none;
 }
 
-.cart-count {
+.action-btn:hover {
+  background: #f5f5f5;
+  color: #c2185b;
+}
+
+.has-favs {
+  color: #c2185b;
+}
+
+.action-badge {
   position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 17px;
-  height: 17px;
-  background: var(--color-primary);
+  top: 3px;
+  left: 3px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  background: #c2185b;
   color: #fff;
   font-size: 0.6rem;
   font-weight: 700;
-  border-radius: 50%;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
 }
 
-/* Mobile */
-@media (max-width: 768px) {
-  .header-inner {
-    gap: var(--space-xs);
-  }
-  .header-nav,
-  .nav-divider {
-    display: none;
-  }
-  .header-search {
-    margin: 0 10px;
-  }
-  .logo-placeholder {
-    width: 56px;
-    height: 28px;
-    font-size: 0.55rem;
-  }
+/* Navigation Bar */
+.header-nav-bar {
+  background: #000;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-/* Mobile Bottom Nav */
+.header-nav-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.header-nav-inner {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  white-space: nowrap;
+  padding: 0;
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 11px 18px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  position: relative;
+  white-space: nowrap;
+}
+
+.nav-link:hover,
+.nav-link.nav-active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  background: #fff;
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.nav-link:hover::after,
+.nav-link.nav-active::after {
+  transform: scaleX(1);
+}
+
+.nav-link-icon {
+  font-size: 1rem;
+}
+
+/* ==========================================
+   Mobile Bottom Nav
+   ========================================== */
 .mobile-bottom-nav {
   display: none;
 }
@@ -311,7 +402,7 @@ onMounted(() => {
     background: rgba(255, 255, 255, 0.98);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid var(--color-border);
+    border-top: 1px solid #eee;
     padding: 8px 0 max(8px, env(safe-area-inset-bottom));
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
   }
@@ -323,7 +414,7 @@ onMounted(() => {
     align-items: center;
     gap: 3px;
     text-decoration: none;
-    color: var(--color-text-light);
+    color: #888;
     font-size: 0.68rem;
     font-weight: 600;
     font-family: inherit;
@@ -340,7 +431,7 @@ onMounted(() => {
 
   .mobile-nav-item:hover,
   .mobile-nav-item.router-link-exact-active {
-    color: var(--color-primary);
+    color: #c2185b;
   }
 
   .mobile-cart-wrap {
@@ -356,7 +447,7 @@ onMounted(() => {
     left: -6px;
     width: 16px;
     height: 16px;
-    background: var(--color-primary);
+    background: #c2185b;
     color: #fff;
     font-size: 0.58rem;
     font-weight: 700;
@@ -364,6 +455,95 @@ onMounted(() => {
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+}
+
+/* Mobile Search Overlay */
+.mobile-search-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 300;
+  background: #fff;
+  padding: 12px 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mobile-search-input {
+  flex: 1;
+  height: 42px;
+  padding: 0 16px;
+  border: 2px solid #222;
+  border-radius: 24px;
+  font-family: var(--font-family);
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.mobile-search-input:focus {
+  border-color: #c2185b;
+}
+
+.mobile-search-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-down-enter-from,
+.slide-down-leave-to {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+/* ==========================================
+   Responsive
+   ========================================== */
+@media (max-width: 768px) {
+  .header-top-inner {
+    height: 54px;
+    gap: 10px;
+  }
+
+  .header-search {
+    display: none;
+  }
+
+  .logo-img {
+    width: 36px;
+    height: 36px;
+  }
+
+  .logo-text {
+    font-size: 1.05rem;
+  }
+
+  .header-nav-bar {
+    /* Keep visible on mobile — scrollable */
+  }
+
+  .action-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 1.2rem;
   }
 }
 </style>

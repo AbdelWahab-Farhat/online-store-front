@@ -47,9 +47,14 @@
             <div v-for="item in cartItems" :key="item.product.id" class="cart-item">
               <!-- Product Image -->
               <NuxtLink :to="`/products/${item.product.id}`" class="item-image-link">
-                <img :src="item.product.image" :alt="item.product.name" class="item-image" />
-                <span v-if="item.product.badge" class="item-badge" :class="{ 'badge-sale': item.product.oldPrice }">
-                  {{ item.product.badge }}
+                <img
+                  :src="getProductImage(item.product)"
+                  :alt="item.product.name"
+                  class="item-image"
+                  @error="setImageFallback"
+                />
+                <span v-if="getProductBadge(item.product)" class="item-badge" :class="{ 'badge-sale': getProductOriginalPrice(item.product) }">
+                  {{ getProductBadge(item.product) }}
                 </span>
               </NuxtLink>
 
@@ -66,7 +71,7 @@
 
                 <p class="item-category">
                   <Icon name="mdi:tag-outline" class="category-icon" />
-                  {{ getCategoryName(item.product.category) }}
+                  {{ getProductCategoryName(item.product) }}
                 </p>
 
                 <div class="item-bottom">
@@ -92,8 +97,8 @@
                   <!-- Price -->
                   <div class="item-price-group">
                     <span class="item-price">{{ (item.product.price * item.quantity).toFixed(0) }} د.ل</span>
-                    <span v-if="item.product.oldPrice" class="item-old-price">
-                      {{ (item.product.oldPrice * item.quantity).toFixed(0) }} د.ل
+                    <span v-if="getProductOriginalPrice(item.product)" class="item-old-price">
+                      {{ (getProductOriginalPrice(item.product)! * item.quantity).toFixed(0) }} د.ل
                     </span>
                   </div>
                 </div>
@@ -113,7 +118,7 @@
             <div class="summary-rows">
               <div class="summary-row">
                 <span>المجموع الفرعي</span>
-                <span>{{ cartTotal.toFixed(0) }} د.ل</span>
+                <span>{{ (cartTotal + cartSavings).toFixed(0) }} د.ل</span>
               </div>
               <div v-if="cartSavings > 0" class="summary-row savings-row">
                 <span>
@@ -127,7 +132,7 @@
                   <Icon name="mdi:truck-delivery-outline" />
                   التوصيل
                 </span>
-                <span class="free-shipping">مجاني</span>
+                <span class="free-shipping">سيتم تحديده لاحقًا</span>
               </div>
             </div>
 
@@ -187,19 +192,193 @@
         </div>
       </div>
     </Transition>
+
+    <!-- Checkout Modal -->
+    <Transition name="modal">
+      <div v-if="showCheckoutModal" class="modal-overlay" @click.self="showCheckoutModal = false">
+        <div class="modal-card checkout-modal-card">
+          <div class="modal-icon-wrap" style="background: rgba(37, 211, 102, 0.1);">
+            <Icon name="mdi:whatsapp" class="modal-icon" style="color: #25d366;" />
+          </div>
+          <h3 class="modal-title">معلومات الطلب</h3>
+          <p class="modal-text">الرجاء إدخال بياناتك لإتمام الطلب عبر واتساب</p>
+          
+          <form @submit.prevent="submitCheckout" class="checkout-form">
+            <div class="form-group">
+              <label>الإسم بالكامل <span class="required">*</span></label>
+              <input v-model="checkoutForm.name" type="text" autocomplete="name" required placeholder="مثال: أحمد محمد" @input="filterTextOnly($event, 'name')" />
+            </div>
+            <div class="form-group">
+              <label>رقم الهاتف <span class="required">*</span></label>
+              <input v-model="checkoutForm.phone" type="tel" autocomplete="tel" required placeholder="مثال: 0912345678" inputmode="numeric" @input="filterPhoneOnly" />
+            </div>
+            <div class="form-group">
+              <label>المدينة <span class="required">*</span></label>
+              <input v-model="checkoutForm.city" type="text" autocomplete="address-level2" required placeholder="مثال: طرابلس" @input="filterTextOnly($event, 'city')" />
+            </div>
+            <div class="form-group">
+              <label>المنطقة (اختياري)</label>
+              <input v-model="checkoutForm.area" type="text" autocomplete="street-address" placeholder="مثال: حي الأندلس" @input="filterTextOnly($event, 'area')" />
+            </div>
+
+            <div class="modal-actions">
+              <button type="button" class="btn btn-outline modal-cancel" @click="showCheckoutModal = false">
+                إلغاء
+              </button>
+              <button type="submit" class="btn btn-primary modal-confirm" style="background: #25d366; border-color: #25d366; color: #fff;" :disabled="isSubmitting">
+                <Icon v-if="isSubmitting" name="mdi:loading" class="spin" />
+                <Icon v-else name="mdi:whatsapp" />
+                {{ isSubmitting ? 'جاري التحضير...' : 'متابعة للواتساب' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { categories } from '~/data/store'
+import type { CartProduct } from '~/composables/useCart'
 
 const { cartItems, cartCount, cartTotal, cartSavings, removeFromCart, updateQuantity, clearCart } = useCart()
 
 const showClearConfirm = ref(false)
+const showCheckoutModal = ref(false)
+const isSubmitting = ref(false)
+const checkoutForm = reactive({
+  name: '',
+  phone: '',
+  city: '',
+  area: ''
+})
 
-function getCategoryName(slug: string) {
+// Lock body scroll when any modal is open
+watch([showClearConfirm, showCheckoutModal], ([clear, checkout]) => {
+  if (import.meta.client) {
+    document.body.style.overflow = (clear || checkout) ? 'hidden' : ''
+  }
+})
+
+// Input validation: strip numbers from text fields
+function filterTextOnly(event: Event, field: 'name' | 'city' | 'area') {
+  const input = event.target as HTMLInputElement
+  // Allow Arabic, Latin letters, spaces, hyphens, dots
+  const cleaned = input.value.replace(/[0-9٠-٩]/g, '')
+  checkoutForm[field] = cleaned
+  input.value = cleaned
+}
+
+// Input validation: strip non-numeric from phone
+function filterPhoneOnly(event: Event) {
+  const input = event.target as HTMLInputElement
+  // Allow only digits and +
+  const cleaned = input.value.replace(/[^0-9+]/g, '')
+  checkoutForm.phone = cleaned
+  input.value = cleaned
+}
+
+onMounted(() => {
+  if (import.meta.client) {
+    const savedCustomer = localStorage.getItem('checkout_customer_info')
+    if (savedCustomer) {
+      try {
+        const parsed = JSON.parse(savedCustomer)
+        checkoutForm.name = parsed.name || ''
+        checkoutForm.phone = parsed.phone || ''
+        checkoutForm.city = parsed.city || ''
+        checkoutForm.area = parsed.area || ''
+      } catch (e) {}
+    }
+  }
+})
+
+function getCategoryName(slug?: string | null) {
+  if (!slug) {
+    return 'تصنيف غير محدد'
+  }
   const cat = categories.find((c) => c.slug === slug)
   return cat ? cat.name : slug
+}
+
+function getProductImage(product: CartProduct) {
+  return product.image || product.images?.find((image) => image?.url)?.url || '/images/placeholder.png'
+}
+
+function getProductOriginalPrice(product: CartProduct) {
+  return product.oldPrice ?? product.compare_price ?? null
+}
+
+function getProductBadge(product: CartProduct) {
+  return product.badge ?? (product.has_discount || Boolean(getProductOriginalPrice(product)) ? 'تخفيض' : '')
+}
+
+function getProductCategoryName(product: CartProduct) {
+  if (product.categories?.length) {
+    const categoryNames = product.categories
+      .map((category) => category?.name)
+      .filter((name): name is string => Boolean(name))
+
+    if (categoryNames.length) {
+      return categoryNames.join('، ')
+    }
+  }
+
+  return getCategoryName(product.category)
+}
+
+function setImageFallback(event: Event) {
+  const image = event.target as HTMLImageElement | null
+  if (!image) {
+    return
+  }
+
+  image.onerror = null
+  image.src = '/images/placeholder.png'
+}
+
+function formatCurrency(value: number) {
+  return `${value.toFixed(0)} د.ل`
+}
+
+function buildWhatsAppOrderMessage() {
+  const lines: string[] = [
+    'مرحباً، أود إتمام هذا الطلب:',
+    '',
+    '*بيانات العميل:*',
+    `الاسم: ${checkoutForm.name}`,
+    `الهاتف: ${checkoutForm.phone}`,
+    `المدينة: ${checkoutForm.city}`,
+  ]
+
+  if (checkoutForm.area) {
+    lines.push(`المنطقة: ${checkoutForm.area}`)
+  }
+
+  lines.push('', '*الطلبات:*')
+
+  cartItems.value.forEach((item, index) => {
+    lines.push(`${index + 1}. ${item.product.name} (الكمية: ${item.quantity})`)
+
+    let img = item.product.image || item.product.images?.[0]?.url
+    if (img && img !== '/images/placeholder.png') {
+      lines.push(`رابط الصورة: ${img}`)
+    }
+  })
+
+  const total = formatCurrency(cartTotal.value)
+  const subtotal = formatCurrency(cartTotal.value + cartSavings.value)
+
+  lines.push('', '*تفاصيل الفاتورة:*', `المجموع الفرعي: ${subtotal}`)
+
+  if (cartSavings.value > 0) {
+    lines.push(`الخصم: - ${formatCurrency(cartSavings.value)}`)
+  }
+
+  lines.push(`*الإجمالي المطلوب: ${total}*`)
+
+  return lines.join('\n')
 }
 
 function confirmClear() {
@@ -208,12 +387,55 @@ function confirmClear() {
 }
 
 function handleCheckout() {
-  // Placeholder for checkout logic
-  alert('سيتم تفعيل الدفع قريباً!')
+  if (cartItems.value.length === 0) return
+  showCheckoutModal.value = true
+}
+
+async function submitCheckout() {
+  if (!checkoutForm.name || !checkoutForm.phone || !checkoutForm.city) return
+
+  isSubmitting.value = true
+  try {
+    const { $axios } = useNuxtApp()
+    const { data } = await $axios.get('/settings')
+    let whatsappRecord = data.data?.find((s: any) => s.key === 'whatsapp_number')
+    
+    // Default fallback if not defined in settings
+    let phoneNumber = whatsappRecord ? whatsappRecord.value : '218910000000'
+
+    // Clean phone number: remove any +, spaces, or leading zeros
+    phoneNumber = phoneNumber.replace(/\D/g, '')
+    const message = buildWhatsAppOrderMessage()
+
+    const encodedMessage = encodeURIComponent(message)
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`
+    
+    // حفظ معلومات الزبون للمرات القادمة
+    if (import.meta.client) {
+      localStorage.setItem('checkout_customer_info', JSON.stringify({
+        name: checkoutForm.name,
+        phone: checkoutForm.phone,
+        city: checkoutForm.city,
+        area: checkoutForm.area
+      }))
+    }
+
+    showCheckoutModal.value = false
+    window.open(whatsappUrl, '_blank')
+    
+    // Optionally clear cart after successful redirect
+    // clearCart()
+  } catch (error) {
+    console.error('Failed to submit order', error)
+    const { addToast } = useToast()
+    addToast('حدث خطأ أثناء الاتصال بالخادم، يُرجى المحاولة لاحقاً', 'error')
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 useHead({
-  title: 'سلة التسوق — أناقة',
+  title: 'سلة التسوق — متجر كيان',
 })
 </script>
 
@@ -732,9 +954,11 @@ useHead({
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   padding: var(--space-lg);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-card {
@@ -745,6 +969,103 @@ useHead({
   width: 100%;
   text-align: center;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  margin: auto 0;
+  flex-shrink: 0;
+}
+
+.modal-icon-wrap {
+  width: 70px;
+  height: 70px;
+  margin: 0 auto var(--space-lg);
+  border-radius: 50%;
+  background: rgba(220, 53, 69, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-icon {
+  font-size: 2.2rem;
+  color: #dc3545;
+}
+
+.modal-title {
+  font-size: var(--font-size-xl);
+  font-weight: 800;
+  color: var(--color-text);
+  margin-bottom: var(--space-sm);
+}
+
+.modal-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+  margin-bottom: var(--space-xl);
+  line-height: 1.6;
+}
+
+.modal-actions {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.modal-actions .btn {
+  flex: 1;
+  padding: var(--space-md);
+  font-size: var(--font-size-sm);
+  gap: 6px;
+}
+
+.checkout-modal-card {
+  max-width: 500px;
+  text-align: right;
+}
+
+.checkout-form {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.form-group .required {
+  color: #dc3545;
+}
+
+.form-group input {
+  padding: 12px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: 0.95rem;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(194, 24, 91, 0.1);
+}
+
+.checkout-modal-card .modal-icon-wrap {
+  margin: 0 auto 20px;
+}
+
+.checkout-modal-card .modal-title,
+.checkout-modal-card .modal-text {
+  text-align: center;
 }
 
 .modal-icon-wrap {

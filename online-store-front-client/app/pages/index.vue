@@ -1,49 +1,109 @@
 <template>
-  <div>
-    <!-- Category Circles (homepage only) -->
-    <CategoriesBar />
-
+  <div class="home-page">
     <!-- Hero Carousel -->
     <HeroBanner />
 
-    <!-- Featured Category Sections (admin-togglable via showOnHome) -->
-    <template v-for="(cat, idx) in homeCategories" :key="cat.id">
-      <section class="featured-section" :class="{ 'alt-bg': idx % 2 !== 0 }">
-        <div class="container">
-          <!-- Section Header with decorative line -->
-          <div class="section-header">
-            <div class="section-title-group">
-              <Icon :name="cat.icon" class="section-icon" />
-              <h2 class="section-title">{{ cat.name }}</h2>
-            </div>
-            <NuxtLink :to="`/products?category=${cat.slug}`" class="view-all-btn">
-              عرض الكل
-              <Icon name="mdi:arrow-left" />
-            </NuxtLink>
+    <!-- All Categories Section -->
+    <section class="categories-section">
+      <div class="container">
+        <div class="section-heading">
+          <div class="heading-content">
+            <Icon name="mdi:shape-outline" class="heading-icon" />
+            <h2 class="heading-title">جميع التصنيفات</h2>
           </div>
-
-          <!-- Decorative divider -->
-          <div class="section-divider">
-            <span class="divider-line"></span>
-            <span class="divider-dot"></span>
-            <span class="divider-line"></span>
-          </div>
-
-          <!-- Products -->
-          <div class="products-row">
-            <ProductCard
-              v-for="product in getProductsByCategory(cat.slug)"
-              :key="product.id"
-              :product="product"
-              class="product-animate"
-            />
-          </div>
+          <div class="heading-line"></div>
         </div>
-      </section>
 
-      <!-- Visual separator between sections -->
-      <div v-if="idx < homeCategories.length - 1" class="wave-separator" :class="`wave-${idx % 3}`"></div>
-    </template>
+        <div v-if="categoriesStore.loading" class="loading-state">
+          <Icon name="mdi:loading" class="spin" />
+          <span>جاري تحميل التصنيفات...</span>
+        </div>
+
+        <div v-else-if="categoriesStore.error && !categories.length" class="loading-state" style="color: #c2185b;">
+          <Icon name="mdi:alert-circle-outline" style="font-size: 2rem; margin-bottom: 10px;" />
+          <h3 style="font-weight: bold; margin-bottom: 5px;">عذراً، فشل تحميل التصنيفات</h3>
+          <p style="margin-bottom: 15px; font-size: 0.9rem;">{{ categoriesStore.error }}</p>
+          <button class="btn btn-primary" @click="categoriesStore.fetchCategories()">إعادة المحاولة</button>
+        </div>
+
+        <div v-else class="categories-grid">
+          <NuxtLink
+            v-for="cat in categories"
+            :key="cat.id"
+            :to="`/products?category=${cat.slug}`"
+            class="category-card"
+          >
+            <div class="category-img-wrap">
+              <img
+                v-if="!categoryImageErrors[cat.id]"
+                :src="cat.image?.url"
+                :alt="cat.name"
+                class="category-image"
+                loading="lazy"
+                @error="categoryImageErrors[cat.id] = true"
+              />
+              <div v-else class="category-img-placeholder">
+                <Icon name="mdi:image-off-outline" />
+              </div>
+              <div class="category-overlay"></div>
+            </div>
+            <div class="category-info">
+              <span class="category-name">{{ cat.name }}</span>
+              <span v-if="cat.products_count" class="category-count">{{ cat.products_count }} منتج</span>
+            </div>
+          </NuxtLink>
+        </div>
+      </div>
+    </section>
+
+    <!-- Latest Products Section -->
+    <section class="products-section">
+      <div class="container">
+        <div class="section-heading">
+          <div class="heading-content">
+            <Icon name="mdi:sparkles" class="heading-icon" />
+            <h2 class="heading-title">أحدث المنتجات</h2>
+          </div>
+          <div class="heading-line"></div>
+        </div>
+
+        <div v-if="productsStore.loading && !products.length" class="loading-state">
+          <Icon name="mdi:loading" class="spin" />
+          <span>جاري تحميل المنتجات...</span>
+        </div>
+
+        <div v-else-if="productsStore.error && !products.length" class="loading-state" style="color: #c2185b;">
+          <Icon name="mdi:alert-circle-outline" style="font-size: 2rem; margin-bottom: 10px;" />
+          <h3 style="font-weight: bold; margin-bottom: 5px;">عذراً، فشل تحميل المنتجات</h3>
+          <p style="margin-bottom: 15px; font-size: 0.9rem;">{{ productsStore.error }}</p>
+          <button class="btn btn-primary" @click="productsStore.fetchProducts({ per_page: 8 })">إعادة المحاولة</button>
+        </div>
+
+        <div v-else class="products-grid">
+          <ProductCard
+            v-for="product in products"
+            :key="product.id"
+            :product="product"
+            class="product-animate"
+          />
+        </div>
+
+        <!-- Show More Button -->
+        <div v-if="productsStore.hasMore" class="show-more-wrap">
+          <button class="show-more-btn" :disabled="productsStore.loadingMore" @click="productsStore.loadMore()">
+            <Icon v-if="productsStore.loadingMore" name="mdi:loading" class="show-more-icon spin" />
+            <Icon v-else name="mdi:arrow-down" class="show-more-icon" />
+            {{ productsStore.loadingMore ? 'جاري التحميل...' : 'عرض المزيد' }}
+          </button>
+        </div>
+
+        <!-- All loaded message -->
+        <div v-else-if="products.length > 0 && !productsStore.hasMore && products.length > 8" class="all-loaded">
+          <Icon name="mdi:check-circle-outline" />
+          <span>تمّ عرض جميع المنتجات</span>
+        </div>
+      </div>
+    </section>
 
     <!-- Promo Banner -->
     <section class="promo-section">
@@ -57,9 +117,9 @@
           <div class="promo-content">
             <span class="promo-badge">عرض خاص ✨</span>
             <h2 class="promo-title">خصم يصل إلى ٤٠٪</h2>
-            <p class="promo-text">على جميع منتجات العناية بالبشرة والمكياج</p>
-            <NuxtLink to="/products?category=skincare" class="btn btn-primary promo-btn">
-              تسوّقي العرض
+            <p class="promo-text">على جميع المنتجات المختارة</p>
+            <NuxtLink to="/products" class="btn btn-primary promo-btn">
+              تسوّق العرض
             </NuxtLink>
           </div>
         </div>
@@ -69,107 +129,184 @@
 </template>
 
 <script setup lang="ts">
-import { products, categories } from '~/data/store'
+import { useCategoriesStore } from '~/stores/categories'
+import { useProductsStore } from '~/stores/products'
 
-const homeCategories = computed(() => categories.filter((c) => c.showOnHome))
+const categoriesStore = useCategoriesStore()
+const productsStore = useProductsStore()
+const { categories } = storeToRefs(categoriesStore)
+const { products } = storeToRefs(productsStore)
 
-function getProductsByCategory(slug: string) {
-  return products.filter((p) => p.category === slug).slice(0, 5)
-}
+const categoryImageErrors = reactive<Record<number, boolean>>({})
+
+onMounted(async () => {
+  await Promise.all([
+    categoriesStore.fetchCategories(),
+    productsStore.fetchProducts({ per_page: 8 }),
+  ])
+})
+
+useSeoMeta({
+  title: 'متجر كيان — الصفحة الرئيسية',
+  description: 'متجر كيان — وجهتك الأولى للتسوّق أونلاين. أحدث المنتجات بأفضل الأسعار وتوصيل سريع!',
+  ogTitle: 'متجر كيان — تسوّق أونلاين',
+  ogDescription: 'تسوق أفضل المنتجات، ملابس، وأدوات زينة من متجر كيان بأفضل الأسعار.',
+  ogImage: '/images/og-image.jpg',
+  twitterCard: 'summary_large_image',
+})
 </script>
 
 <style scoped>
-/* Featured Sections */
-.featured-section {
-  padding: var(--space-3xl) 0 var(--space-2xl);
+/* ==========================================
+   Categories Section
+   ========================================== */
+.categories-section {
+  padding: 48px 0 40px;
   background: #fff;
-  position: relative;
 }
 
-.alt-bg {
+.section-heading {
+  margin-bottom: 32px;
+}
+
+.heading-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.heading-icon {
+  font-size: 1.5rem;
+  color: #c2185b;
+  background: linear-gradient(135deg, rgba(194, 24, 91, 0.08), rgba(194, 24, 91, 0.03));
+  padding: 8px;
+  border-radius: 10px;
+}
+
+.heading-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.heading-line {
+  height: 3px;
+  background: linear-gradient(to left, #c2185b, #e65100, transparent);
+  border-radius: 3px;
+}
+
+/* Categories Grid */
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+}
+
+.category-card {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+}
+
+.category-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+  border-color: transparent;
+}
+
+.category-img-wrap {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+}
+
+.category-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.category-card:hover .category-image {
+  transform: scale(1.08);
+}
+
+.category-img-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f5f5f5 0%, #ececec 100%);
+  color: #ccc;
+  font-size: 2.5rem;
+}
+
+.category-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.35) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.category-card:hover .category-overlay {
+  opacity: 1;
+}
+
+.category-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 10px;
+  background: #fafafa;
+  transition: all 0.3s ease;
+}
+
+.category-card:hover .category-info {
+  background: #c2185b;
+  color: #fff;
+}
+
+.category-icon {
+  font-size: 1.1rem;
+  color: #c2185b;
+  transition: color 0.3s ease;
+}
+
+.category-card:hover .category-icon {
+  color: #fff;
+}
+
+.category-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--color-text);
+  transition: color 0.3s ease;
+}
+
+.category-card:hover .category-name {
+  color: #fff;
+}
+
+/* ==========================================
+   Products Section
+   ========================================== */
+.products-section {
+  padding: 48px 0 56px;
   background: var(--color-bg-soft);
 }
 
-/* Section Header */
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-md);
-}
-
-.section-title-group {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-}
-
-.section-icon {
-  font-size: 1.6rem;
-  color: var(--color-primary);
-  background: linear-gradient(135deg, rgba(194, 24, 91, 0.1), rgba(194, 24, 91, 0.05));
-  padding: 10px;
-  border-radius: var(--radius-md);
-}
-
-.section-title {
-  font-size: var(--font-size-2xl);
-  font-weight: 800;
-  color: var(--color-text);
-  position: relative;
-}
-
-/* Decorative Divider */
-.section-divider {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  margin: var(--space-lg) 0 var(--space-xl);
-}
-
-.divider-line {
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(to left, var(--color-border), transparent);
-}
-
-.divider-line:last-child {
-  background: linear-gradient(to right, var(--color-border), transparent);
-}
-
-.divider-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-  flex-shrink: 0;
-}
-
-.view-all-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  color: var(--color-primary);
-  padding: var(--space-sm) var(--space-lg);
-  border-radius: var(--radius-full);
-  border: 1.5px solid var(--color-primary);
-  transition: all var(--transition-fast);
-}
-
-.view-all-btn:hover {
-  background: var(--color-primary);
-  color: #fff;
-  transform: translateX(-4px);
-}
-
-/* Products Row */
-.products-row {
+.products-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: var(--space-lg);
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
 }
 
 .product-animate {
@@ -181,11 +318,14 @@ function getProductsByCategory(slug: string) {
 .product-animate:nth-child(3) { animation-delay: 0.1s; }
 .product-animate:nth-child(4) { animation-delay: 0.15s; }
 .product-animate:nth-child(5) { animation-delay: 0.2s; }
+.product-animate:nth-child(6) { animation-delay: 0.25s; }
+.product-animate:nth-child(7) { animation-delay: 0.3s; }
+.product-animate:nth-child(8) { animation-delay: 0.35s; }
 
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(24px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -193,70 +333,76 @@ function getProductsByCategory(slug: string) {
   }
 }
 
-/* Wave Separators */
-.wave-separator {
-  height: 40px;
-  position: relative;
-  overflow: hidden;
+/* Show More */
+.show-more-wrap {
+  text-align: center;
+  margin-top: 40px;
 }
 
-.wave-0 {
-  background: var(--color-bg-soft);
-}
-
-.wave-0::before {
-  content: '';
-  position: absolute;
-  top: -20px;
-  left: 0;
-  right: 0;
-  height: 40px;
+.show-more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 48px;
   background: #fff;
-  border-radius: 0 0 50% 50%;
+  color: #222;
+  border: 2px solid #222;
+  border-radius: 30px;
+  font-family: var(--font-family);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.wave-1 {
-  background: #fff;
+.show-more-btn:hover {
+  background: #222;
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
-.wave-1::before {
-  content: '';
-  position: absolute;
-  top: -20px;
-  left: 0;
-  right: 0;
-  height: 40px;
-  background: var(--color-bg-soft);
-  border-radius: 0 0 50% 50%;
+.show-more-icon {
+  font-size: 1.1rem;
+  animation: bounce 2s ease-in-out infinite;
 }
 
-.wave-2 {
-  background: var(--color-bg-soft);
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
 }
 
-.wave-2::before {
-  content: '';
-  position: absolute;
-  top: -20px;
-  left: 0;
-  right: 0;
-  height: 40px;
-  background: #fff;
-  border-radius: 0 0 50% 50%;
+/* All loaded */
+.all-loaded {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 36px;
+  color: #999;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
-/* Promo */
+.all-loaded .iconify {
+  font-size: 1.2rem;
+  color: #4caf50;
+}
+
+/* ==========================================
+   Promo Section
+   ========================================== */
 .promo-section {
-  padding: var(--space-3xl) 0;
-  background: var(--color-bg);
+  padding: 56px 0;
+  background: #fff;
 }
 
 .promo-card {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #880e4f 0%, #c2185b 40%, #e91e80 100%);
-  border-radius: var(--radius-lg);
-  padding: var(--space-3xl) var(--space-2xl);
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  border-radius: 20px;
+  padding: 60px 40px;
   color: #fff;
   text-align: center;
 }
@@ -270,13 +416,13 @@ function getProductsByCategory(slug: string) {
 .shape {
   position: absolute;
   border-radius: 50%;
-  opacity: 0.1;
+  opacity: 0.08;
 }
 
 .shape-1 {
   width: 300px;
   height: 300px;
-  background: #fff;
+  background: #c2185b;
   top: -100px;
   right: -50px;
   animation: float 6s ease-in-out infinite;
@@ -285,7 +431,7 @@ function getProductsByCategory(slug: string) {
 .shape-2 {
   width: 200px;
   height: 200px;
-  background: var(--color-accent);
+  background: #e65100;
   bottom: -80px;
   left: -40px;
   animation: float 8s ease-in-out infinite reverse;
@@ -294,7 +440,7 @@ function getProductsByCategory(slug: string) {
 .shape-3 {
   width: 150px;
   height: 150px;
-  background: #fff;
+  background: #7b1fa2;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -313,68 +459,116 @@ function getProductsByCategory(slug: string) {
 
 .promo-badge {
   display: inline-block;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(194, 24, 91, 0.3);
   backdrop-filter: blur(8px);
-  padding: var(--space-sm) var(--space-lg);
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-sm);
+  padding: 8px 24px;
+  border-radius: 20px;
+  font-size: 0.88rem;
   font-weight: 700;
-  margin-bottom: var(--space-lg);
+  margin-bottom: 20px;
+  border: 1px solid rgba(194, 24, 91, 0.3);
 }
 
 .promo-title {
-  font-size: var(--font-size-3xl);
+  font-size: 2.2rem;
   font-weight: 800;
-  margin-bottom: var(--space-sm);
+  margin-bottom: 10px;
 }
 
 .promo-text {
-  font-size: var(--font-size-lg);
-  opacity: 0.9;
-  margin-bottom: var(--space-xl);
+  font-size: 1.1rem;
+  opacity: 0.8;
+  margin-bottom: 28px;
 }
 
 .promo-btn {
-  padding: var(--space-md) var(--space-2xl);
-  font-size: var(--font-size-base);
+  padding: 14px 40px;
+  font-size: 1rem;
 }
 
-/* Responsive */
+/* ==========================================
+   Responsive
+   ========================================== */
 @media (max-width: 1024px) {
-  .products-row {
-    grid-template-columns: repeat(4, 1fr);
+  .categories-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .products-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
 @media (max-width: 768px) {
-  .products-row {
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-md);
+  .categories-section,
+  .products-section {
+    padding: 32px 0;
   }
-  .featured-section {
-    padding: var(--space-2xl) 0 var(--space-xl);
+  .categories-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .products-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .heading-title {
+    font-size: 1.2rem;
   }
   .promo-title {
-    font-size: var(--font-size-2xl);
+    font-size: 1.6rem;
   }
-  .section-title {
-    font-size: var(--font-size-xl);
+  .promo-card {
+    padding: 40px 24px;
   }
 }
 
 @media (max-width: 480px) {
-  .products-row {
+  .categories-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
   }
-  .section-icon {
-    display: none;
+  .products-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .category-info {
+    padding: 10px 8px;
+  }
+  .category-name {
+    font-size: 0.78rem;
   }
 }
 
 @media (max-width: 768px) {
   /* Prevent content hiding behind mobile bottom nav */
-  div:last-child {
+  .home-page {
     padding-bottom: 70px;
   }
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 60px 20px;
+  color: #999;
+  font-size: 0.95rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Category Count */
+.category-count {
+  font-size: 0.72rem;
+  color: var(--color-text-light);
+  font-weight: 400;
 }
 </style>
