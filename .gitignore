@@ -10,3 +10,11 @@
 .env
 .env.*
 !.env.example
+
+# Docker
+docker-compose.yml
+remote_docker_compose.yml
+online-store-backend/Dockerfile
+online-store-backend/docker-entrypoint.sh
+online-store-front-admin/Dockerfile
+online-store-front-client/Dockerfile
