@@ -18,6 +18,7 @@ definePageMeta({
 const announcementsStore = useAnnouncementsStore()
 const router = useRouter()
 const dialog = useDialog()
+const announcementImageErrors = reactive<Record<number, boolean>>({})
 
 onMounted(() => {
   announcementsStore.fetchAnnouncements()
@@ -66,6 +67,10 @@ function handleDelete(id: number) {
       }
     },
   })
+}
+
+function hasAnnouncementImage(announcement: { id: number; image: { url: string } | null }) {
+  return Boolean(announcement.image?.url) && !announcementImageErrors[announcement.id]
 }
 </script>
 
@@ -122,11 +127,12 @@ function handleDelete(id: number) {
           <!-- Image -->
           <div class="card-image-wrap">
             <img
-              v-if="announcement.image?.url"
+              v-if="hasAnnouncementImage(announcement)"
               :src="announcement.image.url"
               :alt="announcement.title"
               class="card-image"
               loading="lazy"
+              @error="announcementImageErrors[announcement.id] = true"
             />
             <div v-else class="card-image-placeholder">
               <Megaphone :size="36" :stroke-width="1.4" />

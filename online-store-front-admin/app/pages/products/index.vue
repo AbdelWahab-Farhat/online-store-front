@@ -4,7 +4,9 @@ import {
   Pencil,
   TrendingDown,
   Plus,
+  Trash2,
 } from 'lucide-vue-next'
+import type { Product } from '~/types/product'
 
 definePageMeta({
   title: 'المنتجات',
@@ -14,6 +16,8 @@ definePageMeta({
 const productsStore = useProductsStore()
 
 const route = useRoute()
+const dialog = useDialog()
+const productImageErrors = reactive<Record<number, boolean>>({})
 
 onMounted(() => {
   if (route.query.category_id) {
@@ -45,6 +49,38 @@ function toggleCategories(productId: number | string) {
 
 function openProduct(productId: number | string) {
   void navigateTo(`/products/${productId}`)
+}
+
+function getProductImage(product: Product) {
+  if (productImageErrors[product.id]) {
+    return null
+  }
+
+  return getFirstImage(product.images)
+}
+
+function handleDeleteProduct(product: Product) {
+  dialog.confirm({
+    title: 'حذف المنتج',
+    message: `هل أنت متأكد من حذف المنتج "${product.name}"؟ لا يمكن التراجع عن هذا الإجراء.`,
+    confirmText: 'حذف',
+    onConfirm: async () => {
+      const result = await productsStore.deleteProduct(product.id)
+
+      if (result.success) {
+        dialog.success({
+          title: 'تم الحذف',
+          message: result.message,
+        })
+        return
+      }
+
+      dialog.error({
+        title: 'فشل الحذف',
+        message: result.message,
+      })
+    },
+  })
 }
 </script>
 
@@ -109,11 +145,12 @@ function openProduct(productId: number | string) {
             <!-- Image -->
             <div class="card-image-wrap">
               <img
-                v-if="getFirstImage(product.images)"
-                :src="getFirstImage(product.images)!"
+                v-if="getProductImage(product)"
+                :src="getProductImage(product)!"
                 :alt="product.name"
                 class="card-image"
                 loading="lazy"
+                @error="productImageErrors[product.id] = true"
               />
               <div v-else class="card-image-placeholder">
                 <Package :size="36" :stroke-width="1.4" />
@@ -177,6 +214,14 @@ function openProduct(productId: number | string) {
                   >
                     <Pencil :size="16" :stroke-width="2" />
                   </NuxtLink>
+                  <button
+                    class="action-btn delete-btn"
+                    title="حذف"
+                    :disabled="productsStore.isDeleting(product.id)"
+                    @click.stop="handleDeleteProduct(product)"
+                  >
+                    <Trash2 :size="16" :stroke-width="2" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -416,6 +461,20 @@ function openProduct(productId: number | string) {
 .meta-stock {
   font-size: 0.78rem;
   font-weight: 700;
+}
+
+.delete-btn {
+  color: var(--color-red-600);
+}
+
+.delete-btn:hover {
+  background: rgba(202, 61, 84, 0.12);
+  color: var(--color-red-700);
+}
+
+.delete-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
 }
 
 .in-stock {

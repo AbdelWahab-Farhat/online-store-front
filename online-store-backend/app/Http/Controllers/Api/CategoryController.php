@@ -11,6 +11,7 @@ use App\Models\Category;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class CategoryController extends Controller
@@ -84,7 +85,11 @@ class CategoryController extends Controller
 
         // استبدال الصورة (حذف القديمة + رفع الجديدة)
         if ($request->hasFile('image')) {
-            $category->image?->delete();
+            if ($category->image) {
+                Storage::disk('public')->delete($category->image->path);
+                $category->image->delete();
+            }
+
             $path = $request->file('image')->store('categories', 'public');
             $category->image()->create(['path' => $path]);
         }
@@ -102,6 +107,17 @@ class CategoryController extends Controller
      */
     public function destroy(Category $category): JsonResponse
     {
+        if ($category->products()->exists()) {
+            return response()->json([
+                'message' => 'لا يمكن حذف التصنيف لأنه يحتوي على منتجات مرتبطة به.',
+            ], 409);
+        }
+
+        if ($category->image) {
+            Storage::disk('public')->delete($category->image->path);
+            $category->image->delete();
+        }
+
         $category->delete();
 
         return response()->json([

@@ -4,24 +4,24 @@
    ======================================== */
 
 :root {
-  /* Color palette — feminine rose / blush / gold */
-  --color-primary: #c2185b;
-  --color-primary-light: #e91e80;
-  --color-primary-dark: #880e4f;
-  --color-accent: #d4a853;
-  --color-accent-light: #f0d48a;
+  /* Color palette — elegant black & gold */
+  --color-primary: #c9a84c;
+  --color-primary-light: #ddc070;
+  --color-primary-dark: #a8893a;
+  --color-accent: #1a1a2e;
+  --color-accent-light: #2d2d44;
 
-  --color-bg: #fefafb;
-  --color-bg-soft: #fff5f7;
+  --color-bg: #faf9f7;
+  --color-bg-soft: #f5f3ef;
   --color-bg-card: #ffffff;
-  --color-bg-footer: #1a1a2e;
+  --color-bg-footer: #111118;
 
-  --color-text: #2d2d3a;
-  --color-text-light: #6b6b80;
+  --color-text: #1a1a2e;
+  --color-text-light: #5a5a6e;
   --color-text-inverse: #ffffff;
 
-  --color-border: #f0e0e5;
-  --color-shadow: rgba(194, 24, 91, 0.08);
+  --color-border: #e8e4dc;
+  --color-shadow: rgba(26, 26, 46, 0.08);
 
   /* Typography */
   --font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
@@ -186,12 +186,12 @@ ul, ol {
 .btn-primary {
   background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
   color: var(--color-text-inverse);
-  box-shadow: 0 4px 15px rgba(194, 24, 91, 0.3);
+  box-shadow: 0 4px 15px rgba(201, 168, 76, 0.3);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 25px rgba(194, 24, 91, 0.4);
+  box-shadow: 0 6px 25px rgba(201, 168, 76, 0.4);
   color: var(--color-text-inverse);
 }
 

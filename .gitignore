@@ -18,3 +18,5 @@ online-store-backend/Dockerfile
 online-store-backend/docker-entrypoint.sh
 online-store-front-admin/Dockerfile
 online-store-front-client/Dockerfile
+
+deploy.sh

@@ -4,8 +4,10 @@ import {
   Eye,
   Pencil,
   Package,
-  Plus
+  Plus,
+  Trash2,
 } from 'lucide-vue-next'
+import type { Category } from '~/types/category'
 
 definePageMeta({
   title: 'التصنيفات',
@@ -15,6 +17,8 @@ definePageMeta({
 const categoriesStore = useCategoriesStore()
 const productsStore = useProductsStore()
 const router = useRouter()
+const dialog = useDialog()
+const categoryImageErrors = reactive<Record<number, boolean>>({})
 
 onMounted(() => {
   categoriesStore.fetchCategories()
@@ -27,6 +31,44 @@ function goToProducts(categoryId: number) {
 
 function goToEditCategory(categoryId: number) {
   router.push({ path: '/categories/manage', query: { id: categoryId } })
+}
+
+function hasCategoryImage(category: Category) {
+  return Boolean(category.image?.url) && !categoryImageErrors[category.id]
+}
+
+function handleDeleteCategory(category: Category) {
+  const productsCount = category.products_count ?? 0
+
+  if (productsCount > 0) {
+    dialog.info({
+      title: 'تعذر حذف التصنيف',
+      message: `لا يمكن حذف تصنيف "${category.name}" لأنه يحتوي على ${productsCount} منتج.`,
+    })
+    return
+  }
+
+  dialog.confirm({
+    title: 'حذف التصنيف',
+    message: `هل أنت متأكد من حذف تصنيف "${category.name}"؟ لا يمكن التراجع عن هذا الإجراء.`,
+    confirmText: 'حذف',
+    onConfirm: async () => {
+      const result = await categoriesStore.deleteCategory(category.id)
+
+      if (result.success) {
+        dialog.success({
+          title: 'تم الحذف',
+          message: result.message,
+        })
+        return
+      }
+
+      dialog.error({
+        title: 'فشل الحذف',
+        message: result.message,
+      })
+    },
+  })
 }
 </script>
 
@@ -84,11 +126,12 @@ function goToEditCategory(categoryId: number) {
           <!-- Image -->
           <div class="card-image-wrap">
             <img
-              v-if="category.image?.url"
+              v-if="hasCategoryImage(category)"
               :src="category.image.url"
               :alt="category.name"
               class="card-image"
               loading="lazy"
+              @error="categoryImageErrors[category.id] = true"
             />
             <div v-else class="card-image-placeholder">
               <Tag :size="36" :stroke-width="1.4" />
@@ -118,6 +161,15 @@ function goToEditCategory(categoryId: number) {
               <div class="card-actions">
                 <button class="action-btn" title="تعديل" @click.stop="goToEditCategory(category.id)">
                   <Pencil :size="16" :stroke-width="2" />
+                </button>
+                <button
+                  class="action-btn delete-btn"
+                  :class="{ 'delete-btn--blocked': (category.products_count ?? 0) > 0 }"
+                  :title="(category.products_count ?? 0) > 0 ? 'لا يمكن حذف تصنيف يحتوي على منتجات' : 'حذف'"
+                  :disabled="categoriesStore.isDeleting(category.id)"
+                  @click.stop="handleDeleteCategory(category)"
+                >
+                  <Trash2 :size="16" :stroke-width="2" />
                 </button>
               </div>
             </div>
@@ -341,6 +393,25 @@ function goToEditCategory(categoryId: number) {
   background: rgba(20, 32, 51, 0.1);
   color: var(--color-slate-950);
   transform: scale(1.08);
+}
+
+.delete-btn {
+  color: var(--color-red-600);
+}
+
+.delete-btn:hover {
+  background: rgba(202, 61, 84, 0.12);
+  color: var(--color-red-700);
+}
+
+.delete-btn--blocked {
+  opacity: 0.65;
+}
+
+.delete-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+  transform: none;
 }
 
 /* States are now handled by reusable components */

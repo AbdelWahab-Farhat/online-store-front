@@ -8,9 +8,11 @@ use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ProductController extends Controller
@@ -40,10 +42,19 @@ class ProductController extends Controller
     /**
      * عرض منتج واحد (بالـ slug)
      */
-    public function show(string $slug): ProductResource
+    public function show(string $identifier): ProductResource
     {
         $product = Product::with(['categories', 'images'])
-            ->where('slug', $slug)
+            ->where(function ($query) use ($identifier) {
+                if (ctype_digit($identifier)) {
+                    $query->whereKey((int) $identifier)
+                        ->orWhere('slug', $identifier);
+
+                    return;
+                }
+
+                $query->where('slug', $identifier);
+            })
             ->firstOrFail();
 
         return new ProductResource($product);
@@ -123,7 +134,26 @@ class ProductController extends Controller
      */
     public function destroy(Product $product): JsonResponse
     {
-        $product->delete();
+        if ($product->orderItems()->exists()) {
+            return response()->json([
+                'message' => 'لا يمكن حذف المنتج لأنه مرتبط بطلبات سابقة. يمكنك تعطيله بدلاً من ذلك.',
+            ], 409);
+        }
+
+        foreach ($product->images as $image) {
+            Storage::disk('public')->delete($image->path);
+            $image->delete();
+        }
+
+        $product->categories()->detach();
+
+        try {
+            $product->delete();
+        } catch (QueryException) {
+            return response()->json([
+                'message' => 'تعذر حذف المنتج حالياً بسبب وجود بيانات مرتبطة به.',
+            ], 409);
+        }
 
         return response()->json([
             'message' => 'تم حذف المنتج بنجاح.',
@@ -136,6 +166,7 @@ class ProductController extends Controller
     public function deleteImage(Product $product, int $imageId): JsonResponse
     {
         $image = $product->images()->findOrFail($imageId);
+        Storage::disk('public')->delete($image->path);
         $image->delete();
 
         return response()->json([

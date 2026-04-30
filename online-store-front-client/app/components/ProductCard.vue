@@ -124,12 +124,12 @@ watch(() => props.product.id, () => {
 }
 
 .fav-btn.is-fav {
-  color: #c2185b;
+  color: #c9a84c;
 }
 
 .fav-btn:hover {
   transform: scale(1.15);
-  color: #c2185b;
+  color: #c9a84c;
 }
 
 /* Quick Add Button */
@@ -154,7 +154,7 @@ watch(() => props.product.id, () => {
 }
 
 .quick-add:hover {
-  background: #c2185b;
+  background: #c9a84c;
   color: #fff;
   transform: scale(1.1);
 }

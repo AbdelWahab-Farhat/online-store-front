@@ -5,7 +5,9 @@
         <!-- Brand -->
         <div class="footer-section">
           <div class="footer-logo">
-            <span class="logo-icon">✿</span>
+            <div class="footer-logo-avatar">
+              <img src="/images/new-logo.jpeg" alt="متجر كيان" class="footer-logo-img" />
+            </div>
             <span>{{ getSetting('store_name', 'متجر كيان') }}</span>
           </div>
           <p class="footer-desc">
@@ -122,8 +124,19 @@ function getSetting(key: string, fallback: string = '') {
   margin-bottom: var(--space-md);
 }
 
-.logo-icon {
-  font-size: 1.5rem;
+.footer-logo-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--color-primary);
+  flex-shrink: 0;
+}
+
+.footer-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .footer-desc {

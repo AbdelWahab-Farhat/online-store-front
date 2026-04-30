@@ -5,7 +5,9 @@
       <div class="container header-top-inner">
         <!-- Logo -->
         <NuxtLink to="/" class="logo">
-          <img src="/images/logo.png" alt="متجر كيان" class="logo-img" />
+          <div class="logo-avatar">
+            <img src="/images/new-logo.jpeg" alt="متجر كيان" class="logo-img" />
+          </div>
           <span class="logo-text">متجر كيان</span>
         </NuxtLink>
 
@@ -28,7 +30,7 @@
 
         <!-- Action Icons -->
         <div class="header-actions">
-          <NuxtLink to="/" class="action-btn" aria-label="المفضلة">
+          <NuxtLink to="/favorites" class="action-btn" aria-label="المفضلة">
             <Icon :name="favoritesCount > 0 ? 'mdi:heart' : 'mdi:heart-outline'" :class="{ 'has-favs': favoritesCount > 0 }" />
             <span v-if="favoritesCount > 0" class="action-badge">{{ favoritesCount }}</span>
           </NuxtLink>
@@ -72,10 +74,13 @@
       <Icon name="mdi:shopping-outline" />
       <span>المنتجات</span>
     </NuxtLink>
-    <button class="mobile-nav-item" @click="toggleMobileSearch">
-      <Icon name="mdi:magnify" />
-      <span>بحث</span>
-    </button>
+    <NuxtLink to="/favorites" class="mobile-nav-item">
+      <div class="mobile-cart-wrap">
+        <Icon :name="favoritesCount > 0 ? 'mdi:heart' : 'mdi:heart-outline'" :class="{ 'has-favs-mobile': favoritesCount > 0 }" />
+        <span v-if="favoritesCount > 0" class="mobile-cart-badge">{{ favoritesCount }}</span>
+      </div>
+      <span>المفضلة</span>
+    </NuxtLink>
     <NuxtLink to="/Cart" class="mobile-nav-item">
       <div class="mobile-cart-wrap">
         <Icon name="mdi:cart-outline" />
@@ -190,17 +195,26 @@ onMounted(() => {
   text-decoration: none;
 }
 
+.logo-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--color-primary);
+  box-shadow: 0 4px 12px rgba(201, 168, 76, 0.2);
+  flex-shrink: 0;
+}
+
 .logo-img {
-  width: 44px;
-  height: 44px;
-  object-fit: contain;
-  border-radius: 6px;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .logo-text {
   font-size: 1.3rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #e65100, #c2185b, #7b1fa2);
+  background: linear-gradient(135deg, #1a1a2e 0%, #c9a84c 55%, #ddc070 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -235,8 +249,8 @@ onMounted(() => {
 }
 
 .search-input:focus {
-  border-color: #c2185b;
-  box-shadow: 0 0 0 3px rgba(194, 24, 91, 0.1);
+  border-color: #c9a84c;
+  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.15);
 }
 
 .search-btn {
@@ -255,7 +269,7 @@ onMounted(() => {
 }
 
 .search-btn:hover {
-  background: #c2185b;
+  background: #c9a84c;
 }
 
 .search-clear {
@@ -272,7 +286,7 @@ onMounted(() => {
 }
 
 .search-clear:hover {
-  color: #c2185b;
+  color: #c9a84c;
 }
 
 /* Action buttons */
@@ -299,11 +313,11 @@ onMounted(() => {
 
 .action-btn:hover {
   background: #f5f5f5;
-  color: #c2185b;
+  color: #c9a84c;
 }
 
 .has-favs {
-  color: #c2185b;
+  color: #c9a84c;
 }
 
 .action-badge {
@@ -313,7 +327,7 @@ onMounted(() => {
   min-width: 18px;
   height: 18px;
   padding: 0 4px;
-  background: #c2185b;
+  background: #c9a84c;
   color: #fff;
   font-size: 0.6rem;
   font-weight: 700;
@@ -431,7 +445,7 @@ onMounted(() => {
 
   .mobile-nav-item:hover,
   .mobile-nav-item.router-link-exact-active {
-    color: #c2185b;
+    color: #c9a84c;
   }
 
   .mobile-cart-wrap {
@@ -441,13 +455,17 @@ onMounted(() => {
     justify-content: center;
   }
 
+  .has-favs-mobile {
+    color: #c9a84c;
+  }
+
   .mobile-cart-badge {
     position: absolute;
     top: -6px;
     left: -6px;
     width: 16px;
     height: 16px;
-    background: #c2185b;
+    background: #c9a84c;
     color: #fff;
     font-size: 0.58rem;
     font-weight: 700;
@@ -488,7 +506,7 @@ onMounted(() => {
 }
 
 .mobile-search-input:focus {
-  border-color: #c2185b;
+  border-color: #c9a84c;
 }
 
 .mobile-search-close {

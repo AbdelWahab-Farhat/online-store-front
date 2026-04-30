@@ -47,7 +47,7 @@
 
       <!-- Error State -->
       <div v-else-if="productsStore.error && !products.length" class="empty-state">
-        <div class="empty-icon-wrap" style="color: #c2185b;">
+        <div class="empty-icon-wrap" style="color: #c9a84c;">
           <Icon name="mdi:alert-circle-outline" class="empty-icon" />
         </div>
         <h3 class="empty-title">عذراً، فشل تحميل المنتجات</h3>
@@ -434,12 +434,12 @@ useSeoMeta({
 }
 
 .fav-btn.is-fav {
-  color: #c2185b;
+  color: #c9a84c;
 }
 
 .fav-btn:hover {
   transform: scale(1.15);
-  color: #c2185b;
+  color: #c9a84c;
 }
 
 /* Badge */
@@ -455,7 +455,7 @@ useSeoMeta({
 }
 
 .badge-sale {
-  background: #c2185b;
+  background: #c9a84c;
   color: #fff;
 }
 
@@ -500,7 +500,7 @@ useSeoMeta({
 }
 
 .quick-add:hover {
-  background: #c2185b;
+  background: #c9a84c;
   color: #fff;
   transform: scale(1.1);
 }
@@ -532,7 +532,7 @@ useSeoMeta({
 .price-current {
   font-size: 0.95rem;
   font-weight: 800;
-  color: #c2185b;
+  color: #c9a84c;
 }
 
 .price-old {

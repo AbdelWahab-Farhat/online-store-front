@@ -10,6 +10,7 @@ const props = defineProps<{
 const emit = defineEmits(['update:modelValue'])
 
 const categoriesStore = useCategoriesStore()
+const categoryImageErrors = reactive<Record<number, boolean>>({})
 
 onMounted(() => {
   if (!categoriesStore.categories.length) {
@@ -30,6 +31,10 @@ function toggle(id: number) {
     current.push(id)
   }
   emit('update:modelValue', current)
+}
+
+function hasCategoryImage(category: Category) {
+  return Boolean(category.image?.url) && !categoryImageErrors[category.id]
 }
 </script>
 
@@ -59,10 +64,11 @@ function toggle(id: number) {
           </Transition>
         </span>
         <img
-          v-if="cat.image?.url"
+          v-if="hasCategoryImage(cat)"
           :src="cat.image.url"
           :alt="cat.name"
           class="chip-img"
+          @error="categoryImageErrors[cat.id] = true"
         />
         <Tag v-else :size="16" :stroke-width="2" class="chip-icon-placeholder" />
         <span class="chip-label">{{ cat.name }}</span>

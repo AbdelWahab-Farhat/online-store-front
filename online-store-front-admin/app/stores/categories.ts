@@ -8,6 +8,11 @@ export const useCategoriesStore = defineStore('categories', () => {
 
   const submitting = ref(false)
   const validationErrors = ref<Record<string, string>>({})
+  const deletingIds = ref<string[]>([])
+
+  function isDeleting(id: number | string) {
+    return deletingIds.value.includes(String(id))
+  }
 
   async function fetchCategories() {
     const api = useApi()
@@ -106,15 +111,42 @@ export const useCategoriesStore = defineStore('categories', () => {
     }
   }
 
+  async function deleteCategory(id: number | string): Promise<{ success: boolean; message: string }> {
+    const api = useApi()
+    const normalizedId = String(id)
+
+    deletingIds.value = [...deletingIds.value, normalizedId]
+
+    try {
+      const { data } = await api.delete(`/admin/categories/${id}`)
+      await fetchCategories()
+
+      return {
+        success: true,
+        message: data?.message || 'تم حذف التصنيف بنجاح.',
+      }
+    } catch (err: any) {
+      return {
+        success: false,
+        message: err?.response?.data?.message || 'حدث خطأ أثناء حذف التصنيف.',
+      }
+    } finally {
+      deletingIds.value = deletingIds.value.filter(currentId => currentId !== normalizedId)
+    }
+  }
+
   return {
     categories,
     loading,
     error,
     submitting,
     validationErrors,
+    deletingIds,
+    isDeleting,
     fetchCategories,
     fetchCategory,
     addCategory,
     updateCategory,
+    deleteCategory,
   }
 })

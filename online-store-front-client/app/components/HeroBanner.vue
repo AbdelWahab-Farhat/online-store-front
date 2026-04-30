@@ -12,7 +12,7 @@
         }"
       >
         <img
-          v-if="!slideImageErrors[slide.id]"
+          v-if="hasSlideImage(slide)"
           :src="slide.image?.url"
           :alt="slide.title"
           class="slide-image"
@@ -79,6 +79,10 @@ let autoplayTimer: ReturnType<typeof setInterval> | null = null
 let isPaused = false
 
 const totalSlides = computed(() => slides.value.length)
+
+function hasSlideImage(slide: { id: number; image: { url?: string | null } | null }) {
+  return Boolean(slide.image?.url) && !slideImageErrors[slide.id]
+}
 
 function nextSlide() {
   if (!totalSlides.value) return
@@ -278,7 +282,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   padding: 14px 36px;
-  background: var(--color-primary, #c2185b);
+  background: var(--color-primary, #c9a84c);
   color: #fff;
   border-radius: 30px;
   font-size: 1rem;
@@ -362,7 +366,7 @@ onUnmounted(() => {
 .progress-fill {
   height: 100%;
   width: 0;
-  background: var(--color-primary, #c2185b);
+  background: var(--color-primary, #c9a84c);
   border-radius: 2px;
 }
 

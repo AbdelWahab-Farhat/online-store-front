@@ -65,7 +65,9 @@ watch(() => route.path, () => {
           <Menu :size="22" :stroke-width="2" />
         </button>
         <NuxtLink to="/products" class="navbar-brand">
-          <img src="/logo.png" alt="متجر كيان" class="brand-logo" />
+          <div class="brand-logo-avatar">
+            <img src="/new-logo.jpeg" alt="متجر كيان" class="brand-logo" />
+          </div>
           <span class="brand-text">متجر كيان</span>
         </NuxtLink>
       </div>
@@ -110,7 +112,9 @@ watch(() => route.path, () => {
     <aside v-if="isDrawerOpen" class="mobile-drawer">
       <div class="drawer-header">
         <NuxtLink to="/products" class="navbar-brand" @click="closeDrawer">
-          <img src="/logo.png" alt="متجر كيان" class="brand-logo" />
+          <div class="brand-logo-avatar">
+            <img src="/new-logo.jpeg" alt="متجر كيان" class="brand-logo" />
+          </div>
           <span class="brand-text">متجر كيان</span>
         </NuxtLink>
         <button class="drawer-close" @click="closeDrawer" aria-label="إغلاق القائمة">
@@ -207,17 +211,29 @@ watch(() => route.path, () => {
   transform: translateY(-1px);
 }
 
+.brand-logo-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #c9a84c;
+  box-shadow: 0 4px 12px rgba(201, 168, 76, 0.2);
+  flex-shrink: 0;
+}
+
 .brand-logo {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  object-fit: contain;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .brand-text {
   font-weight: 800;
   font-size: 1rem;
-  color: var(--color-slate-950);
+  background: linear-gradient(135deg, #142033 0%, #c46b17 55%, #ec9f43 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   letter-spacing: -0.01em;
 }
 

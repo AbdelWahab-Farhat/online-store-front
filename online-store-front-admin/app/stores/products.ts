@@ -18,6 +18,11 @@ export const useProductsStore = defineStore('products', () => {
   // ─── Add Product State ───
   const submitting = ref(false)
   const validationErrors = ref<Record<string, string>>({})
+  const deletingIds = ref<string[]>([])
+
+  function isDeleting(id: number | string) {
+    return deletingIds.value.includes(String(id))
+  }
 
   async function fetchProducts(page = 1) {
     const api = useApi()
@@ -131,6 +136,34 @@ export const useProductsStore = defineStore('products', () => {
     }
   }
 
+  async function deleteProduct(id: number | string): Promise<{ success: boolean; message: string }> {
+    const api = useApi()
+    const normalizedId = String(id)
+
+    deletingIds.value = [...deletingIds.value, normalizedId]
+
+    try {
+      const { data } = await api.delete(`/admin/products/${id}`)
+      const nextPage = products.value.length === 1 && currentPage.value > 1
+        ? currentPage.value - 1
+        : currentPage.value
+
+      await fetchProducts(nextPage)
+
+      return {
+        success: true,
+        message: data?.message || 'تم حذف المنتج بنجاح.',
+      }
+    } catch (err: any) {
+      return {
+        success: false,
+        message: err?.response?.data?.message || 'حدث خطأ أثناء حذف المنتج.',
+      }
+    } finally {
+      deletingIds.value = deletingIds.value.filter(currentId => currentId !== normalizedId)
+    }
+  }
+
   return {
     products,
     loading,
@@ -145,9 +178,12 @@ export const useProductsStore = defineStore('products', () => {
     selectedCategoryId,
     submitting,
     validationErrors,
+    deletingIds,
+    isDeleting,
     fetchProducts,
     fetchProduct,
     addProduct,
     updateProduct,
+    deleteProduct,
   }
 })

@@ -19,7 +19,7 @@
           <span>جاري تحميل التصنيفات...</span>
         </div>
 
-        <div v-else-if="categoriesStore.error && !categories.length" class="loading-state" style="color: #c2185b;">
+        <div v-else-if="categoriesStore.error && !categories.length" class="loading-state" style="color: #c9a84c;">
           <Icon name="mdi:alert-circle-outline" style="font-size: 2rem; margin-bottom: 10px;" />
           <h3 style="font-weight: bold; margin-bottom: 5px;">عذراً، فشل تحميل التصنيفات</h3>
           <p style="margin-bottom: 15px; font-size: 0.9rem;">{{ categoriesStore.error }}</p>
@@ -35,16 +35,19 @@
           >
             <div class="category-img-wrap">
               <img
-                v-if="!categoryImageErrors[cat.id]"
+                v-if="hasCategoryImage(cat)"
                 :src="cat.image?.url"
                 :alt="cat.name"
                 class="category-image"
                 loading="lazy"
                 @error="categoryImageErrors[cat.id] = true"
               />
-              <div v-else class="category-img-placeholder">
-                <Icon name="mdi:image-off-outline" />
-              </div>
+              <img
+                v-else
+                src="/images/placeholder.png"
+                :alt="cat.name"
+                class="category-image category-img-placeholder"
+              />
               <div class="category-overlay"></div>
             </div>
             <div class="category-info">
@@ -72,7 +75,7 @@
           <span>جاري تحميل المنتجات...</span>
         </div>
 
-        <div v-else-if="productsStore.error && !products.length" class="loading-state" style="color: #c2185b;">
+        <div v-else-if="productsStore.error && !products.length" class="loading-state" style="color: #c9a84c;">
           <Icon name="mdi:alert-circle-outline" style="font-size: 2rem; margin-bottom: 10px;" />
           <h3 style="font-weight: bold; margin-bottom: 5px;">عذراً، فشل تحميل المنتجات</h3>
           <p style="margin-bottom: 15px; font-size: 0.9rem;">{{ productsStore.error }}</p>
@@ -139,6 +142,10 @@ const { products } = storeToRefs(productsStore)
 
 const categoryImageErrors = reactive<Record<number, boolean>>({})
 
+function hasCategoryImage(category: { id: number; image: { url?: string | null } | null }) {
+  return Boolean(category.image?.url) && !categoryImageErrors[category.id]
+}
+
 onMounted(async () => {
   await Promise.all([
     categoriesStore.fetchCategories(),
@@ -178,8 +185,8 @@ useSeoMeta({
 
 .heading-icon {
   font-size: 1.5rem;
-  color: #c2185b;
-  background: linear-gradient(135deg, rgba(194, 24, 91, 0.08), rgba(194, 24, 91, 0.03));
+  color: #c9a84c;
+  background: linear-gradient(135deg, rgba(201, 168, 76, 0.12), rgba(201, 168, 76, 0.04));
   padding: 8px;
   border-radius: 10px;
 }
@@ -192,7 +199,7 @@ useSeoMeta({
 
 .heading-line {
   height: 3px;
-  background: linear-gradient(to left, #c2185b, #e65100, transparent);
+  background: linear-gradient(to left, #c9a84c, #1a1a2e, transparent);
   border-radius: 3px;
 }
 
@@ -237,14 +244,9 @@ useSeoMeta({
 }
 
 .category-img-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #f5f5f5 0%, #ececec 100%);
-  color: #ccc;
-  font-size: 2.5rem;
+  object-fit: contain;
+  padding: 14px;
+  background: linear-gradient(135deg, #f7f3ee 0%, #ece6dd 100%);
 }
 
 .category-overlay {
@@ -270,13 +272,13 @@ useSeoMeta({
 }
 
 .category-card:hover .category-info {
-  background: #c2185b;
+  background: #1a1a2e;
   color: #fff;
 }
 
 .category-icon {
   font-size: 1.1rem;
-  color: #c2185b;
+  color: #c9a84c;
   transition: color 0.3s ease;
 }
 
@@ -422,7 +424,7 @@ useSeoMeta({
 .shape-1 {
   width: 300px;
   height: 300px;
-  background: #c2185b;
+  background: #c9a84c;
   top: -100px;
   right: -50px;
   animation: float 6s ease-in-out infinite;
@@ -431,7 +433,7 @@ useSeoMeta({
 .shape-2 {
   width: 200px;
   height: 200px;
-  background: #e65100;
+  background: #1a1a2e;
   bottom: -80px;
   left: -40px;
   animation: float 8s ease-in-out infinite reverse;
@@ -440,7 +442,7 @@ useSeoMeta({
 .shape-3 {
   width: 150px;
   height: 150px;
-  background: #7b1fa2;
+  background: #c9a84c;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -459,14 +461,14 @@ useSeoMeta({
 
 .promo-badge {
   display: inline-block;
-  background: rgba(194, 24, 91, 0.3);
+  background: rgba(201, 168, 76, 0.25);
   backdrop-filter: blur(8px);
   padding: 8px 24px;
   border-radius: 20px;
   font-size: 0.88rem;
   font-weight: 700;
   margin-bottom: 20px;
-  border: 1px solid rgba(194, 24, 91, 0.3);
+  border: 1px solid rgba(201, 168, 76, 0.35);
 }
 
 .promo-title {

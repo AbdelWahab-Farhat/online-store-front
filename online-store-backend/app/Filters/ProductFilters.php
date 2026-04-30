@@ -5,6 +5,17 @@ namespace App\Filters;
 class ProductFilters extends Filters
 {
     /**
+     * Filter by array of product IDs.
+     */
+    public function ids($ids)
+    {
+        if (is_array($ids) && count($ids) > 0) {
+            return $this->builder->whereIn('id', $ids);
+        }
+        return $this->builder;
+    }
+
+    /**
      * Filter by category id.
      */
     public function category_id($id)

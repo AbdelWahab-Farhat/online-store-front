@@ -13,7 +13,8 @@ import {
   CheckCircle,
   XCircle,
   Percent,
-  Banknote
+  Banknote,
+  Trash2,
 } from 'lucide-vue-next'
 import type { Product } from '~/types/product'
 
@@ -25,12 +26,15 @@ definePageMeta({
 const route = useRoute()
 const router = useRouter()
 const productsStore = useProductsStore()
+const dialog = useDialog()
 
 const product = ref<Product | null>(null)
 const loading = ref(true)
 const activeImageIndex = ref(0)
 const showAllCategories = ref(false)
 const initialCategoriesCount = 3
+const mainImageError = ref(false)
+const thumbnailImageErrors = reactive<Record<number, boolean>>({})
 
 const productId = route.params.id as string
 
@@ -51,8 +55,8 @@ onMounted(async () => {
 })
 
 const mainImage = computed(() => {
-  if (!product.value?.images?.length) return null
-  return product.value.images[activeImageIndex.value]?.url
+  if (!product.value?.images?.length || mainImageError.value) return null
+  return product.value.images[activeImageIndex.value]?.url ?? null
 })
 
 const visibleCategories = computed(() => {
@@ -66,6 +70,50 @@ const hiddenCategoriesCount = computed(() => {
 })
 
 const hasMoreCategories = computed(() => hiddenCategoriesCount.value > 0)
+
+function selectImage(index: number) {
+  activeImageIndex.value = index
+  mainImageError.value = false
+}
+
+function getThumbnailImage(index: number) {
+  const image = product.value?.images[index]
+
+  if (!image || thumbnailImageErrors[image.id]) {
+    return null
+  }
+
+  return image.url
+}
+
+function handleDeleteProduct() {
+  if (!product.value) {
+    return
+  }
+
+  dialog.confirm({
+    title: 'حذف المنتج',
+    message: `هل أنت متأكد من حذف المنتج "${product.value.name}"؟ لا يمكن التراجع عن هذا الإجراء.`,
+    confirmText: 'حذف',
+    onConfirm: async () => {
+      const result = await productsStore.deleteProduct(product.value!.id)
+
+      if (result.success) {
+        dialog.success({
+          title: 'تم الحذف',
+          message: result.message,
+          onConfirm: () => router.push('/products'),
+        })
+        return
+      }
+
+      dialog.error({
+        title: 'فشل الحذف',
+        message: result.message,
+      })
+    },
+  })
+}
 </script>
 
 <template>
@@ -79,6 +127,15 @@ const hasMoreCategories = computed(() => hiddenCategoriesCount.value > 0)
         <NuxtLink :to="`/products/manage?id=${product.id}`" class="button-primary">
           تعديل المنتج
         </NuxtLink>
+        <button
+          type="button"
+          class="danger-btn"
+          :disabled="productsStore.isDeleting(product.id)"
+          @click="handleDeleteProduct"
+        >
+          <Trash2 :size="16" />
+          حذف المنتج
+        </button>
       </div>
     </div>
 
@@ -93,7 +150,13 @@ const hasMoreCategories = computed(() => hiddenCategoriesCount.value > 0)
       <!-- 📸 Gallery Section -->
       <section class="gallery-section surface-card">
         <div class="main-image-wrapper">
-          <img v-if="mainImage" :src="mainImage" :alt="product.name" class="main-image" />
+          <img
+            v-if="mainImage"
+            :src="mainImage"
+            :alt="product.name"
+            class="main-image"
+            @error="mainImageError = true"
+          />
           <div v-else class="empty-image">
             <ImageIcon :size="48" :stroke-width="1.5" />
             <span>لا توجد صورة للمنتج</span>
@@ -106,9 +169,17 @@ const hasMoreCategories = computed(() => hiddenCategoriesCount.value > 0)
             :key="img.id"
             class="thumbnail-btn"
             :class="{ 'thumb-active': idx === activeImageIndex }"
-            @click="activeImageIndex = idx"
+            @click="selectImage(idx)"
           >
-            <img :src="img.url" :alt="`Thumbnail ${idx + 1}`" />
+            <img
+              v-if="getThumbnailImage(idx)"
+              :src="getThumbnailImage(idx)!"
+              :alt="`Thumbnail ${idx + 1}`"
+              @error="thumbnailImageErrors[img.id] = true"
+            />
+            <div v-else class="thumbnail-placeholder">
+              <ImageIcon :size="20" :stroke-width="1.8" />
+            </div>
           </button>
         </div>
       </section>
@@ -228,6 +299,15 @@ const hasMoreCategories = computed(() => hiddenCategoriesCount.value > 0)
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.actions-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .back-btn {
@@ -247,6 +327,31 @@ const hasMoreCategories = computed(() => hiddenCategoriesCount.value > 0)
 .back-btn:hover {
   background: var(--color-slate-100);
   color: var(--color-slate-900);
+}
+
+.danger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: var(--radius-md);
+  background: rgba(202, 61, 84, 0.12);
+  color: var(--color-red-700);
+  font-weight: 800;
+  cursor: pointer;
+  transition: background var(--transition-base), transform var(--transition-base);
+}
+
+.danger-btn:hover {
+  background: rgba(202, 61, 84, 0.18);
+  transform: translateY(-1px);
+}
+
+.danger-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+  transform: none;
 }
 
 
@@ -352,6 +457,15 @@ const hasMoreCategories = computed(() => hiddenCategoriesCount.value > 0)
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.thumbnail-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-slate-400);
 }
 
 .thumbnail-btn:hover {
